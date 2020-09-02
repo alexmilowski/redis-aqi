@@ -13,8 +13,10 @@ def utc_now():
    return datetime.datetime.utcnow().isoformat()
 
 def dump_storage(start,data):
-   print(start.isoformat())
-   print(json.dumps(data),flush=True)
+   sys.stdout.write('\u001e')
+   json.dump({'start': start.isoformat(), 'data' : data},sys.stdout)
+   sys.stdout.write('\n')
+   sys.stdout.flush()
 
 def create_dir_action(dir,prefix='data-'):
 
