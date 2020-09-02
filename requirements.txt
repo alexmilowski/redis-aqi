@@ -1,0 +1,8 @@
+requests
+boto3
+redis
+hiredis
+haversine
+numpy
+pykrige
+scipy
