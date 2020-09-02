@@ -18,12 +18,12 @@ spec:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                secretKeyRef:
-                 name: gcp
+                 name: s3
                  key: access-key-id
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
                secretKeyRef:
-                 name: gcp
+                 name: s3
                  key: secret-access-key
             - name: BOX
               valueFrom:
