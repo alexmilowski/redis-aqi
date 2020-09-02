@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: purpleair-collection
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: Never
+      volumes:
+        - name: scripts
+          configMap:
+            name: collect
+      containers:
+        - name: collect
+          image: python:3.8-slim
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+               secretKeyRef:
+                 name: gcp
+                 key: access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+               secretKeyRef:
+                 name: gcp
+                 key: secret-access-key
+            - name: BOX
+              valueFrom:
+               configMapKeyRef:
+                 name: parameters
+                 key: box
+            - name: ENDPOINT
+              valueFrom:
+               configMapKeyRef:
+                 name: parameters
+                 key: endpoint
+            - name: BUCKET
+              valueFrom:
+               configMapKeyRef:
+                 name: parameters
+                 key: bucket
+            - name: INTERVAL
+              valueFrom:
+               configMapKeyRef:
+                 name: parameters
+                 key: interval
+            - name: PARTITION
+              valueFrom:
+               configMapKeyRef:
+                 name: parameters
+                 key: partition
+          volumeMounts:
+            - mountPath: /opt/scripts/
+              name: scripts
+          #Bay Area: 38.41646632263371,-124.02669995117195,36.98663820370443,-120.12930004882817
+          #URL: https://www.purpleair.com/data.json?opt=1/mAQI/a10/cC0&fetch=true&nwlat=38.41646632263371&selat=36.98663820370443&nwlng=-124.02669995117195&selng=-120.12930004882817&fields=pm_1,
+          command:
+            - /bin/bash
+            - -c
+            - |
+              pip install requests boto3
+              python3 /opt/scripts/collect.py --bounding-box $BOX --s3-endpoint $ENDPOINT --s3-bucket $BUCKET --interval $INTERVAL --partition $PARTITION --verbose
