@@ -1,6 +1,11 @@
 # redis-aqi
 A demonstration of the geospatial features of Redis to interpolate an AQI (Air Quality Index) from sensor data.
 
+This project provides a sample application that uses Redis as a database to
+store geospatial air quality data (see [Using Redis](#using-redis)). The raw data from sensors is transformed into [AQI (Air Quality Index)](https://www.airnow.gov/aqi/aqi-basics/) measurements and stored as in geospatial partitions.
+
+A simple Flask-based application (see [Demonstration](#demonstration)) creates a map-based interactive experience with the datetime and geospatial partitions of the data and displays an interpolated (estimated) surface of AQI measurements (see [Interpolation](#interpolation)).
+
 # Data sources
 
 [PurpleAir sells](https://www.purpleair.com) air quality sensors that measure
@@ -181,3 +186,43 @@ from the PM value.
 
 There is also a `AQIInterpolator` class that can be used directly and
 provides the same functionality as the command-line program.
+
+## Using Redis
+
+More to come ...
+
+## Demonstration
+
+A simple Flask-based web application will provide a map-based interactive experience with the data. You can run the application against a local Redis instance:
+
+```
+python app.py
+```
+
+You can connect to a Redis database with the following parameters:
+
+ * --host ip
+
+   The Redis host address
+ * --port nnn
+
+   The Redis port
+
+ * --password password
+
+   The Redis password
+
+The data is stored in Redis by ISO 8601 dateTime labeled partitions. You can provide alternate key prefix and partition period information by:
+
+ * --key-prefix prefix
+ * --partition nnn
+
+Note: The partition time is in minutes.
+
+Alternatively, all of the above settings can be set in the Flask configuration file and specified by the --config option. The keys are:
+
+ * REDIS_HOST
+ * REDIS_PORT
+ * REDIS_PASSWORD
+ * KEY_PREFIX
+ * PARTITION
