@@ -141,7 +141,7 @@ over a geospatial area.
 
 The following example (from the Bay Area 2028-08-28) uses the krige exponential method of interpolation:
 
-![Example interpolation of AQI from 2020-08-28](example-2020-08-28T13:30:00PT30M.png)
+![Example interpolation of AQI from 2020-08-28](example-2020-08-28T13%3a30%3a00PT30M.png)
 
 You can use a variety of method to interpolate a grid of AQI values from
 the observed values. The python program [interpolate.py](interpolate.py)
