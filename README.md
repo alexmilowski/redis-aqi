@@ -112,7 +112,7 @@ kubectl create configmap parameters \
 Note: Amazon S3 endpoints can be [found here](https://docs.aws.amazon.com/general/latest/gr/s3.html) or
 you can omit the --endpoint parameter from the [collection.yaml](collection.yaml) job specification.
 
-If you need to update the python script or parameters, you can use the --dry-run parameter to kubectl. For example, the script can be updated with:
+Also, if you need to update the python script or parameters, you can use the --dry-run parameter to kubectl. For example, the script can be updated with:
 
 ```
 kubectl create configmap collect --from-file=collect.py=collect.py --dry-run -o yaml | kubectl apply -f -
@@ -131,3 +131,48 @@ You can monitor the progress at:
 ```
 kubectl logs job/purpeair-collection
 ```
+
+## Interpolation
+
+Interpolation of AQI values relies on having an atmospheric model for
+the distribution of particulate matter. Absent such a model, standard
+interpolation methods such as [linear interpolation](https://en.wikipedia.org/wiki/Linear_interpolation) can be used as a gross estimation of the AQI
+over a geospatial area.
+
+You can use a variety of method to interpolate a grid of AQI values from
+the observed values. The python program [interpolate.py](interpolate.py)
+provides an implementation basic linear, cubic, nearest, and krige-based
+methods of interpolation as a library as well as a program.
+
+You can try the interpolation on collected data by:
+
+```
+python interpolate.py url [url ...]
+```
+
+The options are:
+
+ * --verbose
+
+   enable verbose output
+ * --size nn
+
+   The grid mesh size (integer)
+ * --resolution nn.nnn
+
+   The grid resolution (float)
+ * --index n
+
+   The pm measurement to use - a value from 0 to 6
+ * --method linear|cubic|nearest|krige-linear|krige-power|krige-gaussian|krige-spherical|krige-exponential|krige-hole-effect
+ * --bounding-box' nwlat,nwlon,selat,selon
+
+   The bounding box (quadrangle) for the interpolation
+
+Note: You should only specify --size or --resolution but not both.
+
+The library provides a function called `aqiFromPM` for calculating the AQI
+from the PM value.
+
+There is also a `AQIInterpolator` class that can be used directly and
+provides the same functionality as the command-line program.
