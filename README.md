@@ -135,7 +135,8 @@ kubectl logs job/purpeair-collection
 ## Interpolation
 
 Interpolation of AQI values relies on having an atmospheric model for
-the distribution of particulate matter. Absent such a model, standard
+the distribution of particulate matter that takes into account weather,
+wind conditions, elevation, etc. Absent such a model, standard
 interpolation methods such as [linear interpolation](https://en.wikipedia.org/wiki/Linear_interpolation) can be used as a gross estimation of the AQI
 over a geospatial area.
 
