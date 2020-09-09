@@ -17,8 +17,8 @@ def aqiFromPM(pm):
 
    if pm < 0:
       raise ValueError('pm must be > 0: '+str(pm))
-   if pm > 1000:
-      raise ValueError('pm must be < 1000: '+str(pm))
+   if pm > 1200:
+      raise ValueError('pm must be < 1200: '+str(pm))
    # Good                              0 - 50         0.0 - 15.0         0.0 – 12.0
    # Moderate                         51 - 100           >15.0 - 40        12.1 – 35.4
    # Unhealthy for Sensitive Groups  101 – 150     >40 – 65          35.5 – 55.4
