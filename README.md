@@ -99,6 +99,12 @@ Create the S3 credentials in a secret:
 kubectl create secret generic s3 --from-literal=access-key-id=... "--from-literal=secret-access-key=..."
 ```
 
+For example, if you have stored your access key and secret in the standard environment variables:
+
+```
+kubectl create secret generic s3 "--from-literal=access-key-id=${AWS_ACCESS_KEY_ID}" "--from-literal=secret-access-key=${AWS_SECRET_ACCESS_KEY}"
+```
+
 Store the collection script in a configmap:
 ```
 kubectl create configmap collect --from-file=collect.py=collect.py
@@ -111,7 +117,7 @@ kubectl create configmap parameters \
 --from-literal=endpoint=https://storage.googleapis.com \
 --from-literal=bucket=purpleair \
 --from-literal=interval=300 \
---from-literal=partition=1800
+--from-literal=partition=30
 ```
 
 Note: Amazon S3 endpoints can be [found here](https://docs.aws.amazon.com/general/latest/gr/s3.html) or
