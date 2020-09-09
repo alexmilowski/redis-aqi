@@ -13,7 +13,8 @@ def ingest(client, data, box=None, partition=30,prefix='AQI30-',verbose=False):
    # print(data[0])
    duration = 'PT' + str(partition) + 'M'
    partiton_set = prefix + duration
-   partiton_set_paritions = partiton_set + '-PARTITIONS'
+   last_partition_no = -1
+   last_hour = -1
    count = 0
    for row in data[1:]:
       # We must have a lat/lon
@@ -35,19 +36,17 @@ def ingest(client, data, box=None, partition=30,prefix='AQI30-',verbose=False):
       partition_no = timestamp.minute // partition
       partition_start = datetime(timestamp.year,timestamp.month,timestamp.day,timestamp.hour,partition_no * partition,tzinfo=timestamp.tzinfo)
       partition_duration = partition_start.isoformat() + duration
-      date_partiton_set = prefix + duration + date(timestamp.year,timestamp.month,timestamp.day).isoformat()
       offset = timestamp.minute % partition
       key = prefix + partition_duration
-      score = partition_start.year*10**8 + partition_start.month*10**6 + partition_start.day*10**4 + partition_start.hour*60 + partition_start.minute
 
       # prefix + partition start dateTime + duration (e.g., AQI30-2020-08-25T16:00:00PT30M)
-      client.geoadd(key,lon,lat,str(row[1]) + '@' + str(offset) + ','.join(map(lambda n : str(round(n,2)),pm)))
-      # prefix + duration (e.g., AQI30-PT30M)
-      client.zincrby(partiton_set,1,key)
-      # prefix + duration + '-PARTITIONS'
-      client.zadd(partiton_set_paritions,{partition_duration : score})
-      # prefix + duration + date (e.g., AGI30-PT30M-2020-08-25)
-      client.zincrby(date_partiton_set,1,key)
+      client.geoadd(key,lon,lat,str(row[1]) + '@' + str(offset) + ',' + ','.join(map(lambda n : str(round(n,2)),pm)))
+      if last_hour!=partition_start.hour or last_partition_no != partition_no:
+         # prefix + duration (e.g., AQI30-PT30M)
+         score = partition_start.year*10**8 + partition_start.month*10**6 + partition_start.day*10**4 + partition_start.hour*60 + partition_start.minute
+         client.zadd(partiton_set,{key : score})
+      last_partition_no = partition_no
+      last_hour = partition_start.hour
       count += 1
       if verbose:
          print(str(count),end='')

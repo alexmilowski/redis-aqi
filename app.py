@@ -84,26 +84,67 @@ def load():
       'grid' : grid.tolist()
    })
 
-@aqi.route('/api/partition/<partition_set>/at')
+@aqi.route('/api/partition/<partition_set>/')
+@aqi.route('/api/partition/<partition_set>')
 def partition(partition_set):
    client = get_redis()
 
-   lat = float(request.args.get('lat'))
-   lon = float(request.args.get('lon'))
-   radius = int(request.args.get('radius'))
-   unit = request.args.get('unit')
+   key = current_app.config['KEY_PREFIX'] + partition_set
+
+   try:
+      lat = float(request.args.get('lat')) if 'lat' in request.args else None
+      lon = float(request.args.get('lon')) if 'lon' in request.args else None
+      radius = float(request.args.get('radius')) if 'radius' in request.args else None
+      unit = request.args.get('unit')
+
+      nwlat = float(request.args.get('nwlat')) if 'nwlat' in request.args else None
+      nwlon = float(request.args.get('nwlon')) if 'nwlon' in request.args else None
+      selat = float(request.args.get('selat')) if 'selat' in request.args else None
+      selon = float(request.args.get('selon')) if 'selon' in request.args else None
+   except ValueError as e:
+      return jsonify({'error':'Invalid parameter value: '+str(e)}),400
+
+   bounds = None
+
+   if nwlat is not None and \
+      nwlon is not None and \
+      selat is not None and \
+      selon is not None:
+
+      lat_size = abs(nwlat - selat)
+      lon_size = abs(nwlon - selon)
+
+      center = (nwlat - lat_size/2, nwlon + lon_size/2)
+      radius = haversine(center,(nwlat,nwlon),unit=Unit.KILOMETERS)
+      print(center)
+      print(radius)
+      unit = 'km'
+      lat = center[0]
+      lon = center[1]
+
+      bounds = [nwlat,nwlon,selat,selon]
+
+
 
    if lat is None or lon is None or radius is None:
-      abort(400)
+      return jsonify({'error': 'Missing minimal parameters: lat, lon, radius; optional: nwlat, nwlon, selat, selon, unit'}), 400
 
-   key = current_app.config['KEY_PREFIX'] + partition_set
+   if unit is None:
+      unit = 'km'
 
    result = client.georadius(key,lon,lat,radius,unit=unit,withcoord=True)
 
    data = []
    for key, pos in result:
-      sensor = key.decode('utf-8').split(':')
-      data.append([sensor[0],int(sensor[1]),pos[1],pos[0]])
+
+      if bounds is not None and (pos[1] > bounds[0] or pos[1] < bounds[2] or pos[0] < bounds[1] or pos[0] > bounds[3]):
+         continue
+
+      sensor = key.decode('utf-8').split(',')
+      id, minute = sensor[0].split('@')
+      minute = int(minute)
+      readings = list(map(float,sensor[1:]))
+      data.append([id,minute] + [pos[1],pos[0]] + readings)
 
    return jsonify(data)
 
@@ -113,16 +154,19 @@ def interpolate(partition_set):
 
    #bayarea = [38.41646632263371,-124.02669995117195,36.98663820370443,-120.12930004882817]
 
-   nwlat = float(request.args.get('nwlat'))
-   nwlon = float(request.args.get('nwlon'))
-   selat = float(request.args.get('selat'))
-   selon = float(request.args.get('selon'))
+   try:
+      nwlat = float(request.args.get('nwlat')) if 'nwlat' in request.args else None
+      nwlon = float(request.args.get('nwlon')) if 'nwlon' in request.args else None
+      selat = float(request.args.get('selat')) if 'selat' in request.args else None
+      selon = float(request.args.get('selon')) if 'selon' in request.args else None
+   except ValueError as e:
+      return jsonify({'error':'Invalid parameter value: '+str(e)}),400
 
    method = request.args.get('method','linear')
 
 
    if nwlat is None or nwlon is None or selat is None or selon is None:
-      abort(400)
+      return jsonify({'error': 'Missing minimal parameters: nwlat, nwlon, selat, selon'}), 400
 
    lat_size = abs(nwlat - selat)
    lon_size = abs(nwlon - selon)
@@ -142,12 +186,7 @@ def interpolate(partition_set):
 
    bounds = [nwlat,nwlon,selat,selon]
 
-   print(bounds)
-   print(interpolation_bounds)
-
-
    interpolator = AQIInterpolator(interpolation_bounds,mesh_size=200,resolution=None)
-   print(interpolator.resolution)
    for key, pos in result:
       sensor = key.decode('utf-8').split(',')
       # pm_2
@@ -165,10 +204,11 @@ def interpolate(partition_set):
 def partitions():
    redis = get_redis()
 
-   key = current_app.config['KEY_PREFIX'] + 'PT' + str(current_app.config['PARTITION']) + 'M-PARTITIONS'
+   key = current_app.config['KEY_PREFIX'] + 'PT' + str(current_app.config['PARTITION']) + 'M'
 
    cursor = -1
    partitions = []
+   offset = len(current_app.config['KEY_PREFIX'])
    while cursor!=0:
       if cursor<0:
          cursor = 0
@@ -176,7 +216,7 @@ def partitions():
       cursor = values[0]
       for key,value in values[1]:
          key = key.decode('utf-8')
-         partitions.append(key)
+         partitions.append(key[offset:])
 
    return jsonify(partitions)
 
@@ -191,8 +231,6 @@ def send_asset(path):
          dir = os.getcwd() + '/assets/'
       else:
          dir = __file__[:pos] + '/assets/'
-   print(__file__)
-   print(dir)
    return send_from_directory(dir, path)
 
 
