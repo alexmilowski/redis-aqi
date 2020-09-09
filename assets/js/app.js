@@ -35,22 +35,31 @@ $(document).ready(() => {
                opacity = 1
             }
             opacity = opacity * 0.75;
-            let color = "#8b0000";
-            if (value < 50 ) {
+            let color = "#4b0082";
+            if (value < 50 ) { // 0-50: good
                // good
                color = "#adff2f";
-            } else if (value < 100) {
+            } else if (value < 100) { // 50-100: moderate
                // moderate
-               color = "#ffff00"
-            } else if (value < 150 ) {
+               color = "#ff8c00"
+            } else if (value < 150 ) { // 100 - 150: unhealthy for sensitive groups
                // unhealthy for sensitive groups
                color = "#ff4500";
-            } else if (value < 200) {
+            } else if (value < 200) { // 150 - 200: unhealthy
                // unhealthy
-               color = "#dc143c";
-            } else if (value < 300) {
+               color = "#ff4500";
+            } else if (value < 250) { // 200 - 300: very unhealthy
                // very unhealthy
-               color = "#b20000";
+               color = "#b22222";
+            } else if (value < 300) { // 200 - 300: very unhealthy
+               // very unhealthy
+               color = "#8b0000";
+            } else if (value < 350) { // 300 - 350: hazardous
+               // very unhealthy
+               color = "#9932cc";
+            } else if (value < 400) { // 350 - 400: hazardous
+               // very unhealthy
+               color = "#800080";
             }
             // if (lat_pos%10 == 0) {
             //    console.log(`${lat_pos},${lon_pos} = ${data.grid[lat_pos][lon_pos]} -> ${opacity}, ${color}`);
