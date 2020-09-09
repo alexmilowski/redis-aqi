@@ -1,6 +1,6 @@
 import argparse
 import requests
-import datetime
+from datetime import datetime
 import time
 import json
 import signal
@@ -8,9 +8,6 @@ import sys
 import os
 
 import boto3
-
-def utc_now():
-   return datetime.datetime.utcnow().isoformat()
 
 def dump_storage(start,data):
    sys.stdout.write('\u001e')
@@ -59,10 +56,11 @@ def create_s3_storage_action(bucket_name,verbose=False,endpoint=None,key=None,se
    return s3_storage
 
 class Collector:
-   def __init__(self,url,interval=60,partition_interval=5*60,datetime_header='timestamp',verbose=False,store_action=dump_storage):
+   def __init__(self,url,interval=60,partition_interval=30,datetime_header='timestamp',verbose=False,store_action=dump_storage):
       self.url = url
       self.interval = interval
-      self.partition_interval= partition_interval
+      self.partition_interval = partition_interval
+      self.partition_no = -1
       self.datetime_header = datetime_header
       self.collecting = False
       self.headers = None
@@ -71,9 +69,14 @@ class Collector:
       self.store_action = store_action
 
    def partition(self):
+      timestamp = datetime.utcnow()
+      current_partition_no = timestamp.minute // self.partition_interval
+      if current_partition_no==self.partition_no:
+         return
       if self.data is not None and len(self.data)>0:
          self.store()
-      self.parition_start = datetime.datetime.utcnow()
+      self.partition_no = timestamp.minute // self.partition_interval
+      self.partition_start = datetime(timestamp.year,timestamp.month,timestamp.day,timestamp.hour,self.partition_no * self.partition_interval,tzinfo=timestamp.tzinfo)
       self.data = []
 
    def stop(self):
@@ -84,17 +87,13 @@ class Collector:
 
       self.collecting = True
 
-      self.partition()
-
       def pause():
          time.sleep(self.interval)
 
       while self.collecting:
 
-         # check for a partition
-         elapsed = datetime.datetime.utcnow() - self.parition_start
-         if elapsed.total_seconds() >= self.partition_interval:
-            self.partition()
+         # check for a partition, commit early in case we changed partitions after the pause
+         self.partition()
 
          # request the data
          response = requests.get(self.url)
@@ -108,10 +107,20 @@ class Collector:
          except json.decoder.JSONDecodeError as e:
             print('{line}:{column} {msg}'.format(line=e.lineno,column=e.colno,msg=e.msg),file=sys.stderr)
             print(response.text,file=sys.stderr,flush=True)
-            pause()
-            continue
+            print('Attempting to patch JSON response...',file=sys.stderr,flush=True)
+            fixed = response.text.replace('"data":[],','"data":[')
+            try:
+               current_data = json.loads(fixed)
+            except json.decoder.JSONDecodeError as e:
+               print('Unsuccessful!',file=sys.stderr,flush=True)
+               pause()
+               continue
+            print('Patched!',file=sys.stderr,flush=True)
 
-         timestamp = utc_now()
+         # check for a partition, check to make sure we haven't changed partitions before we add data
+         self.partition()
+
+         timestamp = datetime.utcnow().isoformat()
          if self.verbose:
             print('{timestamp} : {count}'.format(timestamp=timestamp,count=current_data.get('count',0)),flush=True)
 
@@ -127,6 +136,7 @@ class Collector:
                row.insert(0,timestamp)
                self.data.append(row)
 
+
          # pause for the interval
          pause()
 
@@ -137,7 +147,7 @@ class Collector:
       if self.headers is not None:
          self.data.insert(0,self.headers)
 
-      self.store_action(self.parition_start,self.data)
+      self.store_action(self.partition_start,self.data)
       self.data = None
 
 if __name__ == '__main__':
@@ -145,7 +155,7 @@ if __name__ == '__main__':
    argparser = argparse.ArgumentParser(description='collect-aq')
    argparser.add_argument('--verbose',help='Verbose output',action='store_true',default=False)
    argparser.add_argument('--interval',help='The collection interval (seconds)',type=int,default=60)
-   argparser.add_argument('--partition',help='The data partition (in seconds)',type=int,default=5*60)
+   argparser.add_argument('--partition',help='The data partition (in minutes)',type=int,default=30)
    argparser.add_argument('--align',help='Align time partitions',action='store_true',default=False)
    argparser.add_argument('--url',help='The base service url',default='https://www.purpleair.com/data.json')
    argparser.add_argument('--bounding-box',help='The bounding box (nwlat,nwlon,selat,selon)',default='37.80888750820881,-122.57097888976305,37.719593811785046,-122.32739139586647')
@@ -168,6 +178,10 @@ if __name__ == '__main__':
       sys.exit(1)
 
    url = args.url
+
+   if 60 % args.partition:
+      print('The partition {} is not a divisor of 60'.format(args.partition))
+      sys.exit(1)
 
    box_params = args.bounding_box_parameters.split(',')
    box = args.bounding_box.split(',')
