@@ -13,7 +13,7 @@ import gzip
 import functools
 import argparse
 
-from interpolate import loader, AQIInterpolator
+from interpolate import loader, AQIInterpolator, aqiFromPM
 from datetime import datetime
 
 app = Flask('aqi')
@@ -149,8 +149,10 @@ def interpolate(partition_set):
    interpolator = AQIInterpolator(interpolation_bounds,mesh_size=200,resolution=None)
    print(interpolator.resolution)
    for key, pos in result:
-      sensor = key.decode('utf-8').split(':')
-      interpolator.add(pos[1],pos[0],[int(sensor[1])])
+      sensor = key.decode('utf-8').split(',')
+      # pm_2
+      pm_2 = float(sensor[3])
+      interpolator.add(pos[1],pos[0],[aqiFromPM(pm_2)])
 
    grid = interpolator.generate_grid(method=method,index=0)
    return jsonify({
