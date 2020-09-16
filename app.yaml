@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-aqi
+  labels:
+    app: aqi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aqi
+  template:
+    metadata:
+      labels:
+        app: aqi
+    spec:
+      containers:
+      - name: flask
+        image: alexmilowski/flask-aqi:2020-09-14-002
+        env:
+          - name: REDIS_HOST
+            valueFrom:
+             secretKeyRef:
+               name: redis
+               key: service
+          - name: REDIS_PORT
+            valueFrom:
+             secretKeyRef:
+               name: redis
+               key: port
+          - name: REDIS_PASSWORD
+            valueFrom:
+             secretKeyRef:
+               name: redis
+               key: password
+        ports:
+        - containerPort: 5000
