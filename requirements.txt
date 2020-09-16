@@ -6,3 +6,5 @@ haversine
 numpy
 pykrige
 scipy
+flask
+pyyaml
