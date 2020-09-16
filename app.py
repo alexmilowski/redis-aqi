@@ -14,9 +14,9 @@ import functools
 import argparse
 
 from interpolate import loader, AQIInterpolator, aqiFromPM
+from ingest import datetime_score
 from datetime import datetime
-
-app = Flask('aqi')
+from time import time
 
 def get_redis():
    if 'redis' not in g:
@@ -155,6 +155,8 @@ def interpolate(partition_set):
    #bayarea = [38.41646632263371,-124.02669995117195,36.98663820370443,-120.12930004882817]
 
    try:
+      resolution = float(request.args.get('resolution')) if 'resolution' in request.args else 0.025
+      index = int(request.args.get('index')) if 'index' in request.args else 0
       nwlat = float(request.args.get('nwlat')) if 'nwlat' in request.args else None
       nwlon = float(request.args.get('nwlon')) if 'nwlon' in request.args else None
       selat = float(request.args.get('selat')) if 'selat' in request.args else None
@@ -171,8 +173,8 @@ def interpolate(partition_set):
    lat_size = abs(nwlat - selat)
    lon_size = abs(nwlon - selon)
    scale = 0
-   if lon_size<2.0:
-      scale = 2.0/lon_size/2
+   if lon_size<0.5:
+      scale = 0.5/lon_size/2
 
    interpolation_bounds = [nwlat + lat_size*scale, nwlon - lon_size*scale, selat - lat_size*scale, selon + lon_size*scale]
 
@@ -184,16 +186,30 @@ def interpolate(partition_set):
 
    result = client.georadius(key,center[1],center[0],radius,unit='km',withcoord=True)
 
+   if len(result)==0:
+      return jsonify({
+         'bounds' : interpolation_bounds,
+         'grid' : []
+      })
+
    bounds = [nwlat,nwlon,selat,selon]
 
-   interpolator = AQIInterpolator(interpolation_bounds,mesh_size=200,resolution=None)
+   start = time();
+
+   interpolator = AQIInterpolator(interpolation_bounds,resolution=resolution)
    for key, pos in result:
       sensor = key.decode('utf-8').split(',')
-      # pm_2
-      pm_2 = float(sensor[3])
-      interpolator.add(pos[1],pos[0],[aqiFromPM(pm_2)])
+      # pm_0 at position 1
+      pm = float(sensor[1+index])
+      interpolator.add(pos[1],pos[0],[aqiFromPM(pm)])
 
+   print(interpolator.resolution)
+
+   loaded = time();
+   print('Loaded: '+str(loaded-start))
    grid = interpolator.generate_grid(method=method,index=0)
+   done = time();
+   print('Interpolation: '+str(done-loaded))
    return jsonify({
       'bounds' : interpolation_bounds,
       'resolution' : interpolator.resolution,
@@ -204,21 +220,68 @@ def interpolate(partition_set):
 def partitions():
    redis = get_redis()
 
+   start = request.args.get('start')
+   end = request.args.get('end')
+
    key = current_app.config['KEY_PREFIX'] + 'PT' + str(current_app.config['PARTITION']) + 'M'
 
-   cursor = -1
-   partitions = []
-   offset = len(current_app.config['KEY_PREFIX'])
-   while cursor!=0:
-      if cursor<0:
-         cursor = 0
-      values = redis.zscan(key,cursor=cursor)
-      cursor = values[0]
-      for key,value in values[1]:
-         key = key.decode('utf-8')
-         partitions.append(key[offset:])
+   first = redis.zrange(key,0,0)
+   last = redis.zrevrange(key,0,0)
 
-   return jsonify(partitions)
+   prefix_len = len(current_app.config['KEY_PREFIX'])
+
+   if len(first)==0:
+      return jsonify({})
+
+   first = first[0].decode('utf-8')
+   first_datetime = first[prefix_len:first.rfind('PT')]
+   last = last[0].decode('utf-8')
+   last_datetime = last[prefix_len:last.rfind('PT')]
+
+   partition_info = {'duration' : 'PT' + str(current_app.config['PARTITION']) + 'M', 'first': {'at': first_datetime, 'partition':first}, 'last': {'at': last_datetime, 'partition':last}}
+   if start is None and end is None:
+      return jsonify(partition_info)
+
+   if start is None:
+      start = first_datetime
+
+
+   if start.find('T')<0:
+      start += 'T00:00:00'
+
+   if end is not None and end.find('T')<0:
+      end += 'T23:59:59'
+
+   start = datetime.fromisoformat(start)
+
+   if end is None:
+      timestamp = datetime.utcnow()
+      partition_no = timestamp.minute // current_app.config['PARTITION']
+      end = datetime(timestamp.year,timestamp.month,timestamp.day,timestamp.hour,partition_no * current_app.config['PARTITION'],tzinfo=timestamp.tzinfo)
+   else:
+      end = datetime.fromisoformat(end)
+
+   start_score = datetime_score(start)
+   end_score = datetime_score(end)
+
+   partitions = list(map(lambda v : v.decode('utf-8')[prefix_len:],redis.zrangebyscore(key,start_score,end_score)))
+
+   partition_info['partitions'] = partitions
+   return jsonify(partition_info)
+
+   # cursor = -1
+   # partitions = []
+   # offset = len(current_app.config['KEY_PREFIX'])
+   # while cursor!=0:
+   #    if cursor<0:
+   #       cursor = 0
+   #    values = redis.zscan(key,cursor=cursor)
+   #    cursor = values[0]
+   #    for key,value in values[1]:
+   #       key = key.decode('utf-8')
+   #       partitions.append(key[offset:])
+   #
+   # return jsonify(partitions)
 
 assets = Blueprint('aqi_assets',__name__)
 @assets.route('/assets/<path:path>')
@@ -233,22 +296,25 @@ def send_asset(path):
          dir = __file__[:pos] + '/assets/'
    return send_from_directory(dir, path)
 
+def from_env(name,default_value,dtype=str):
+   return dtype(os.environ[name]) if name in os.environ else default_value
 
 def create_app(host='0.0.0.0',port=6379,password=None,prefix='AQI30-',partition=30,app=None):
-   if app is None:
-      app = Flask(__name__)
+   app = Flask(__name__)
+   if 'AQI_CONF' in os.environ:
+      app.config.from_envvar('AQI_CONF')
    app.register_blueprint(aqi)
    app.register_blueprint(assets)
    if 'REDIS_HOST' not in app.config:
-      app.config['REDIS_HOST'] = host
+      app.config['REDIS_HOST'] = from_env('REDIS_HOST',host)
    if 'REDIS_PORT' not in app.config:
-      app.config['REDIS_PORT'] = port
+      app.config['REDIS_PORT'] = from_env('REDIS_PORT',port,dtype=int)
    if 'REDIS_PASSWORD' not in app.config:
-      app.config['REDIS_PASSWORD'] = password
+      app.config['REDIS_PASSWORD'] = from_env('REDIS_PASSWORD',password)
    if 'KEY_PREFIX' not in app.config:
-      app.config['KEY_PREFIX'] = prefix
+      app.config['KEY_PREFIX'] = from_env('KEY_PREFIX',prefix)
    if 'PARTITION' not in app.config:
-      app.config['PARTITION'] = partition
+      app.config['PARTITION'] = from_env('PARTITION',partition)
    return app
 
 def main():
