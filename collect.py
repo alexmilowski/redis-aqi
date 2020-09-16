@@ -130,11 +130,13 @@ class Collector:
             self.headers.insert(0,self.datetime_header)
 
          if 'data' in current_data:
-            # add the rows of data
-            for row in current_data['data']:
-               # add the timestamp
-               row.insert(0,timestamp)
-               self.data.append(row)
+            rows = current_data['data']
+            if rows is not None:
+               # add the rows of data
+               for row in rows:
+                  # add the timestamp
+                  row.insert(0,timestamp)
+                  self.data.append(row)
 
 
          # pause for the interval
