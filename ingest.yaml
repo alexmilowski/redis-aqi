@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingest-now
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: Never
+      volumes:
+        - name: scripts
+          configMap:
+            name: ingest
+      containers:
+        - name: ingest
+          image: python:3.8-slim
+          env:
+            - name: REDIS_HOST
+              valueFrom:
+               secretKeyRef:
+                 name: redis
+                 key: service
+            - name: REDIS_PORT
+              valueFrom:
+               secretKeyRef:
+                 name: redis
+                 key: port
+            - name: REDIS_PASSWORD
+              valueFrom:
+               secretKeyRef:
+                 name: redis
+                 key: password
+            - name: ENDPOINT
+              valueFrom:
+               configMapKeyRef:
+                 name: parameters
+                 key: endpoint
+            - name: BUCKET
+              valueFrom:
+               configMapKeyRef:
+                 name: parameters
+                 key: bucket
+            - name: BUCKET_URL
+              value: "$(ENDPOINT)/$(BUCKET)/data-"
+            - name: INDEX
+              value: "all"
+            - name: TYPE
+              value: "now"
+            - name: PARTITION
+              value: "30"
+            - name: PRECISION
+              value: "0"
+            - name: ARGS
+              value: ""
+          volumeMounts:
+            - mountPath: /opt/scripts/
+              name: scripts
+          command:
+            - /bin/bash
+            - -c
+            - |
+              pip install requests redis hiredis
+              python3 /opt/scripts/ingest.py --confirm --precision ${PRECISION} --partition ${PARTITION} --index ${INDEX} --type ${TYPE} --host ${REDIS_HOST} --port ${REDIS_PORT} --password ${REDIS_PASSWORD} --ignore-not-found --bucket-url ${BUCKET_URL} ${ARGS}
