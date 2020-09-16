@@ -34,6 +34,8 @@ def ingest(client, data, precision=None, indices=None,box=None, partition=30,pre
    last_partition_no = -1
    last_hour = -1
    count = 0
+   batch_size = 1000
+   pipe = client.pipeline(transaction=False)
    for row in data[1:]:
       # We must have a lat/lon
       if row[13] is None or row[14] is None:
@@ -66,17 +68,20 @@ def ingest(client, data, precision=None, indices=None,box=None, partition=30,pre
       key = prefix + partition_duration
 
       # prefix + partition start dateTime + duration (e.g., AQI30-2020-08-25T16:00:00PT30M)
-      client.geoadd(key,lon,lat,str(row[1]) + '@' + str(offset) + ',' + ','.join(map(str,pm)))
+      pipe.geoadd(key,lon,lat,str(row[1]) + '@' + str(offset) + ',' + ','.join(map(str,pm)))
       if last_hour!=partition_start.hour or last_partition_no != partition_no:
          # prefix + duration (e.g., AQI30-PT30M)
          score = datetime_score(partition_start)
-         client.zadd(partiton_set,{key : score})
+         pipe.zadd(partiton_set,{key : score})
       last_partition_no = partition_no
       last_hour = partition_start.hour
       count += 1
+      if count % batch_size == 0:
+         pipe.execute()
       if verbose:
          print(str(count),end='')
          print('\r',end='')
+   pipe.execute()
    if verbose:
       print()
 
