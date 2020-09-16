@@ -14,7 +14,10 @@
 </head>
 <body>
    <div id="actionbar">
-      <select id="partition"></select><select id="method"></select><button id="aqi">AQI</button> <label for="url">URL</label> <input id="url" value="https://storage.googleapis.com/purpleair/data-2020-08-25T18%3A13%3A06.577158.json" size="100"><button id="load">Load Data</button>
+      <select id="partition"></select><select id="method"></select><select id="resolution"></select><button id="aqi">AQI</button> <input id="from_date" size="10">@<input id="from_time" size="8"> to <input id="to_date" size="10">@<input id="to_time" size="8"> <button id="sequence">Sequence</button> <button id="stop">Stop</button>
+      <span id="extent"></span>
+      <!--<label for="url">URL</label> <input id="url" value="https://storage.googleapis.com/purpleair/data-2020-08-25T18%3A13%3A06.577158.json" size="100"><button id="load">Load Data</button>-->
+
    </div>
    <div id="map"></div>
 </body>
