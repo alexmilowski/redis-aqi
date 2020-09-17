@@ -187,19 +187,19 @@ as a quick test.
       ```
       python ingest.py --confirm --precision 0 --index 1 --type data file1.json file2.json ...
       ```
-   * If you have data in object storage:
+    * If you have data in object storage:
 
-     ```
-     python ingest.py --confirm --precision 0 --index 1 --type at --bucket-url https://storage.googleapis.com/yourbuckethere/data- 2020-09-10T00:00:00,2020-09-10T23:30:00
-     ```
+      ```
+      python ingest.py --confirm --precision 0 --index 1 --type at --bucket-url https://storage.googleapis.com/yourbuckethere/data- 2020-09-10T00:00:00,2020-09-10T23:30:00
+      ```
 
-     For the above, the assumption is you've made your bucket of collected data
-     publicly accessible. The date range specified will enumerate through the partitions which defaults to 30 minutes. You can change the partition size
-     via the --partition parameter but this parameter must match the partitions
-     you used for collection.
+      For the above, the assumption is you've made your bucket of collected data
+      publicly accessible. The date range specified will enumerate through the partitions which defaults to 30 minutes. You can change the partition size
+      via the --partition parameter but this parameter must match the partitions
+      you used for collection.
 
-   The ingest program has a number of options for controlling what is ingested and
-   how it finds the data
+    The ingest program has a number of options for controlling what is ingested and
+    how it finds the data
 
  1. Run the web application:
 
