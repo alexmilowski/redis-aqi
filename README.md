@@ -156,16 +156,16 @@ of Redis and the Web application for how to produce your own map-based interpola
 # Running the application
 
 The application is an interactive map that allows you to interact with the
-interpolation. You can select various time periods or run animations of
-the interpolations.
+AQI interpolation. You can select various time periods or run animations of
+the AQI interpolations over a map.
 
 The overall architecture is:
 
  * the data collection runs continuously storing the collected data into
-   object storage (S3) in partition slices.
+   object storage (S3) in date/time partitions.
 
- * an ingestion process will read these data partitions from object storage
-   and store them into geospatial partitions in [Redis](https://redis.io) (i.e., via [GEOADD](https://redis.io/commands/geoadd)). These partitions are stored as separate keys in Redis.
+ * an ingestion process reads these partitions from object storage
+   and store them into geospatial partitions in [Redis](https://redis.io) (i.e., via [GEOADD](https://redis.io/commands/geoadd)). These partitions are stored as separate keys in Redis to facilitate scale-out.
 
  * a Flask application provides an API for interacting with the data
    partitions, querying based on geospatial parameters, and running
