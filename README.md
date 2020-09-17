@@ -4,7 +4,7 @@ This project provides a demonstration of the use of the geospatial features of R
 for the purpose store air quality sensor readings and provides a sample
 Web application that can AQI (Air Quality Index) measurements over a map.
 
-The raw data is collected from air quality sensors (see [Data sources](#Data_sources))
+The raw data is collected from air quality sensors (see [Data sources](#data-sources))
 and is transformed into [AQI (Air Quality Index)](https://www.airnow.gov/aqi/aqi-basics/)
 measurements and stored as in geospatial partitions.
 
