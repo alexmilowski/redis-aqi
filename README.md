@@ -42,11 +42,13 @@ interface to data collection that can poll at regular intervals and
 collect the data from the API. This data is aggregated by the program and can
 be stored in a variety of ways (e.g., in an S3-compatible object storage).
 
+## Running collection
+
 This program can be run as:
 
 ```
 # collect for the bay area every 5 minutes and partition by 30 minutes
-python collect.py --bounding-box 38.41646632263371,-124.02669995117195,36.98663820370443,-120.12930004882817  --interval 300 --partition 1800 --s3-bucket yourbuckethere
+python collect.py --bounding-box 38.41646632263371,-124.02669995117195,36.98663820370443,-120.12930004882817  --interval 300 --partition 30 --s3-bucket yourbuckethere
 ```
 
 some common options are:
@@ -57,7 +59,7 @@ some common options are:
  * --internal seconds
 
    The collection interval in seconds
- * --partition seconds
+ * --partition minutes
 
    The elapsed time in seconds at which to partition the data for storage
  * --prefix value
@@ -81,7 +83,7 @@ Any boto3 authentication method can be used (e.g., the AWS_ACCESS_KEY_ID and AWS
 
 ## Data storage
 
-The collect.py program will retrieve data from the API at the interval you
+The collect.py program retrieves data from the API at the interval you
 specify. It will aggregate the collected data until the partition time
 limit has been reached and then store the tabular data as a JSON artifact. By
 default, the data is sent to stdout in [JSON Text Sequences](https://tools.ietf.org/html/rfc7464).
@@ -92,7 +94,9 @@ You can store data in an S3 bucket by specifying the --s3-bucket parameter with
 a bucket name.
 
 In each case, the file name generated is the prefix appended with the ISO 8601
-date and time format and suffixed with .json extension. For example, `data-2020-09-02T00:25:23.596826.json`.
+date and time format and suffixed with .json extension. For example, `data-2020-09-02T14:30:00.json`
+is the data for the time partition starting at 14:30:00 on 2020-09-02 and
+extending through the end of duration (i.e., 30 minutes till 15:00:00).
 
 
 
