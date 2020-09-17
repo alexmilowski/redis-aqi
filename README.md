@@ -35,14 +35,14 @@ You can create a python environment with all the required packages by:
 pip install -r requirements.txt
 ```
 
-# Collecting Data
+# Collecting dData
 
 The python program [collect.py](collect.py) provides a simple command line
 interface to data collection that can poll at regular intervals and
 collect the data from the API. This data is aggregated by the program and can
 be stored in a variety of ways (e.g., in an S3-compatible object storage).
 
-## Running collection
+## Running data collection
 
 This program can be run as:
 
@@ -81,7 +81,7 @@ some common options are:
 
 Any boto3 authentication method can be used (e.g., the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables) instead of the command-line parameters.
 
-## Data storage
+## Where data is stored
 
 The collect.py program retrieves data from the API at the interval you
 specify. It will aggregate the collected data until the partition time
