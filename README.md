@@ -1,11 +1,17 @@
 # redis-aqi
 
-A demonstration of the geospatial features of Redis to interpolate an AQI (Air Quality Index) from sensor data.
+This project provides a demonstration of the use of the geospatial features of Redis
+for the purpose store air quality sensor readings and provides a sample
+Web application that can AQI (Air Quality Index) measurements over a map.
 
-This project provides a sample application that uses Redis as a database to
-store geospatial air quality data (see [Using Redis](#using-redis)). The raw data from sensors is transformed into [AQI (Air Quality Index)](https://www.airnow.gov/aqi/aqi-basics/) measurements and stored as in geospatial partitions.
+The raw data is collected from air quality sensors (see [Data sources](#Data_sources))
+and is transformed into [AQI (Air Quality Index)](https://www.airnow.gov/aqi/aqi-basics/)
+measurements and stored as in geospatial partitions.
 
-A simple Flask-based application (see [Demonstration](#demonstration)) creates a map-based interactive experience with the datetime and geospatial partitions of the data and displays an interpolated (estimated) surface of AQI measurements (see [Interpolation](#interpolation)).
+The demonstration application is a simple Flask-based application
+that creates a map-based interactive experience with the date/time and geospatial
+partitions of the data which displays an interpolated (estimated) surface
+of AQI measurements (see [Interpolation](#interpolation)).
 
 # Data sources
 
