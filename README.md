@@ -38,15 +38,15 @@ pip install -r requirements.txt
 # Collecting Data
 
 The python program [collect.py](collect.py) provides a simple command line
-interface to data collection that can optional poll an regular intervals and
+interface to data collection that can poll at regular intervals and
 collect the data from the API. This data is aggregated by the program and can
-be stored in a variety of ways (e.g., in S3-compatible cloud storage).
+be stored in a variety of ways (e.g., in an S3-compatible object storage).
 
 This program can be run as:
 
 ```
 # collect for the bay area every 5 minutes and partition by 30 minutes
-python collect.py --bounding-box 38.41646632263371,-124.02669995117195,36.98663820370443,-120.12930004882817  --interval 300 --partition 1800 --s3-bucket purpleair
+python collect.py --bounding-box 38.41646632263371,-124.02669995117195,36.98663820370443,-120.12930004882817  --interval 300 --partition 1800 --s3-bucket yourbuckethere
 ```
 
 some common options are:
@@ -65,7 +65,7 @@ some common options are:
      The data file prefix
  * --s3-endpoint url
 
-   A non-AWS endpoint for S3 (e.g., https://storage.googleapis.com)
+   A endpoint for the S3 protocol (e.g., https://storage.googleapis.com or [AWS endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.html))
  * --s3-bucket name
 
    The S3 bucket name for storage
@@ -77,7 +77,7 @@ some common options are:
 
    The AWS secret access key
 
-Any boto3 authentication method can be used (e.g., the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables).
+Any boto3 authentication method can be used (e.g., the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables) instead of the command-line parameters.
 
 ## Data storage
 
