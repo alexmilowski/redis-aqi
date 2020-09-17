@@ -254,10 +254,10 @@ as a quick test.
 
 The whole application can be run on Kubernetes:
 
- * *Data collection* - a long-running K8s Job
- * *Redis* - a simple deployment or via the [Redis Enterprise Operator](https://github.com/RedisLabs/redis-enterprise-k8s-docs)
- * *Ingestion* - scheduled or ad-hoc K8s Jobs
- * *Web Application* - via a Deployment
+ * *Data collection* - a long-running K8s Job,
+ * *Redis* - a simple deployment or via the [Redis Enterprise Operator](https://github.com/RedisLabs/redis-enterprise-k8s-docs),
+ * *Ingestion* - scheduled or ad-hoc K8s Jobs,
+ * *Web Application* - via a Deployment.
 
 For this setup, we'll using a single namespace:
 
