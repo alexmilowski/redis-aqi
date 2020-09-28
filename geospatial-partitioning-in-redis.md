@@ -2,7 +2,7 @@
 
 ## Testing MathML
 
-<p><math xmlns="http://www.w3.org/1998/Math/MathML">
+<p><math>
 <mi>y</mi>
 <mo>=</mo>
 <mfrac>
