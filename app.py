@@ -4,14 +4,15 @@ import sys
 from flask import Flask
 from flask import request, current_app, Blueprint, send_from_directory, render_template, after_this_request, jsonify, g, abort
 
-from haversine import haversine, Unit
-from math import sqrt
-
 import redis
 
 import gzip
 import functools
 import argparse
+
+from geo import query_circle, query_quadrangle
+from geo import quadrangle_for_sequence_number
+from geo import is_valid_datetime_partition
 
 from interpolate import loader, AQIInterpolator, aqiFromPM
 from ingest import datetime_score
@@ -84,6 +85,95 @@ def load():
       'grid' : grid.tolist()
    })
 
+@aqi.route('/api/q/<size>/n/<sequence_number>/<datetime_partition>/')
+@aqi.route('/api/q/<size>/n/<sequence_number>/<datetime_partition>')
+@gzipped
+def quadrandle(size,sequence_number,datetime_partition):
+   client = get_redis()
+
+   partition_start = datetime.fromisoformat(datetime_partition)
+
+   partition = current_app.config.get('PARTITION',30)
+   if not is_valid_datetime_partition(partition,partition_start):
+      return jsonify({'error':'Invalid datetime partition, partitions muse end every {partition} minutes: {t}'.format(partition=partition,t=datetime_partition)}),400
+
+   try:
+      size = float(size)
+   except ValueError as e:
+      return jsonify({'error':'Invalid partition size: '+str(e)}),400
+
+   try:
+      sequence_number = int(sequence_number)
+   except ValueError as e:
+      return jsonify({'error':'Invalid sequence number: '+str(e)}),400
+
+   nw, se = quadrangle_for_sequence_number(size,sequence_number)
+
+   key = current_app.config['KEY_PREFIX'] + datetime_partition + 'PT' + str(partition) + 'M'
+
+   result = query_quadrangle(client,key,nw,se)
+
+   data = []
+   for key, pos in result:
+
+      sensor = key.decode('utf-8').split(',')
+      id, minute = sensor[0].split('@')
+      minute = int(minute)
+      readings = list(map(float,sensor[1:]))
+      data.append([id,minute] + [pos[0],pos[1]] + readings)
+
+   return jsonify(data)
+
+@aqi.route('/api/interpolate',methods=['POST'])
+@gzipped
+def interpolate_region():
+   client = get_redis()
+
+   data = request.json
+
+   size = data.get('size',0.5)
+
+   if 'bounds' not in data:
+      return jsonify({'error':'Missing bounds of region.'}),400
+
+
+
+   bounds = data.get('bounds')
+
+   partition_start = datetime.fromisoformat(datetime_partition)
+
+   partition = current_app.config.get('PARTITION',30)
+   if not is_valid_datetime_partition(partition,partition_start):
+      return jsonify({'error':'Invalid datetime partition, partitions muse end every {partition} minutes: {t}'.format(partition=partition,t=datetime_partition)}),400
+
+   try:
+      size = float(size)
+   except ValueError as e:
+      return jsonify({'error':'Invalid partition size: '+str(e)}),400
+
+   try:
+      sequence_number = int(sequence_number)
+   except ValueError as e:
+      return jsonify({'error':'Invalid sequence number: '+str(e)}),400
+
+   nw, se = quadrangle_for_sequence_number(size,sequence_number)
+
+   key = current_app.config['KEY_PREFIX'] + datetime_partition + 'PT' + str(partition) + 'M'
+
+   result = query_quadrangle(client,key,nw,se)
+
+   data = []
+   for key, pos in result:
+
+      sensor = key.decode('utf-8').split(',')
+      id, minute = sensor[0].split('@')
+      minute = int(minute)
+      readings = list(map(float,sensor[1:]))
+      data.append([id,minute] + [pos[0],pos[1]] + readings)
+
+   return jsonify(data)
+
+
 @aqi.route('/api/partition/<partition_set>/')
 @aqi.route('/api/partition/<partition_set>')
 def partition(partition_set):
@@ -104,47 +194,38 @@ def partition(partition_set):
    except ValueError as e:
       return jsonify({'error':'Invalid parameter value: '+str(e)}),400
 
+
+
    bounds = None
+
+   if None in [nwlat,nwlon,selat,selon]:
+      return jsonify({'error': 'The bounds of the quadrangle are not completely specified. All of nwlat, nwlon, selat, and selon must be specified.'}), 400
+
+   if unit is None:
+      unit = 'km'
 
    if nwlat is not None and \
       nwlon is not None and \
       selat is not None and \
       selon is not None:
 
-      lat_size = abs(nwlat - selat)
-      lon_size = abs(nwlon - selon)
+      result = query_quadrangle(client,key,(nwlat,nwlon),(selat,selon))
 
-      center = (nwlat - lat_size/2, nwlon + lon_size/2)
-      radius = haversine(center,(nwlat,nwlon),unit=Unit.KILOMETERS)
-      print(center)
-      print(radius)
-      unit = 'km'
-      lat = center[0]
-      lon = center[1]
+   else:
 
-      bounds = [nwlat,nwlon,selat,selon]
+      if None in [lat,lon,radius]:
+         return jsonify({'error': 'The bounds of the circle are not completely specified. All of lat, lon, and radius must be specified.'}), 400
 
-
-
-   if lat is None or lon is None or radius is None:
-      return jsonify({'error': 'Missing minimal parameters: lat, lon, radius; optional: nwlat, nwlon, selat, selon, unit'}), 400
-
-   if unit is None:
-      unit = 'km'
-
-   result = client.georadius(key,lon,lat,radius,unit=unit,withcoord=True)
+      result = query_circle(client,key,(lat,lon),radius,unit=unit)
 
    data = []
    for key, pos in result:
-
-      if bounds is not None and (pos[1] > bounds[0] or pos[1] < bounds[2] or pos[0] < bounds[1] or pos[0] > bounds[3]):
-         continue
 
       sensor = key.decode('utf-8').split(',')
       id, minute = sensor[0].split('@')
       minute = int(minute)
       readings = list(map(float,sensor[1:]))
-      data.append([id,minute] + [pos[1],pos[0]] + readings)
+      data.append([id,minute] + [pos[0],pos[1]] + readings)
 
    return jsonify(data)
 
@@ -167,8 +248,8 @@ def interpolate(partition_set):
    method = request.args.get('method','linear')
 
 
-   if nwlat is None or nwlon is None or selat is None or selon is None:
-      return jsonify({'error': 'Missing minimal parameters: nwlat, nwlon, selat, selon'}), 400
+   if None in [nwlat,nwlon,selat,selon]:
+      return jsonify({'error': 'The bounds of the quadrangle are not completely specified. All of nwlat, nwlon, selat, and selon must be specified.'}), 400
 
    lat_size = abs(nwlat - selat)
    lon_size = abs(nwlon - selon)
@@ -178,35 +259,30 @@ def interpolate(partition_set):
 
    interpolation_bounds = [nwlat + lat_size*scale, nwlon - lon_size*scale, selat - lat_size*scale, selon + lon_size*scale]
 
-   center = (nwlat - lat_size/2, nwlon + lon_size/2)
-
-   radius = haversine(center,(interpolation_bounds[0],interpolation_bounds[1]),unit=Unit.KILOMETERS)
-
    key = current_app.config['KEY_PREFIX'] + partition_set
 
-   result = client.georadius(key,center[1],center[0],radius,unit='km',withcoord=True)
-
-   if len(result)==0:
-      return jsonify({
-         'bounds' : interpolation_bounds,
-         'grid' : []
-      })
-
-   bounds = [nwlat,nwlon,selat,selon]
+   result = query_quadrangle(client,key,(interpolation_bounds[0],interpolation_bounds[1]),(interpolation_bounds[2],interpolation_bounds[3]))
 
    start = time();
+   count = 0
 
    interpolator = AQIInterpolator(interpolation_bounds,resolution=resolution)
    for key, pos in result:
       sensor = key.decode('utf-8').split(',')
       # pm_0 at position 1
       pm = float(sensor[1+index])
-      interpolator.add(pos[1],pos[0],[aqiFromPM(pm)])
-
-   print(interpolator.resolution)
+      interpolator.add(pos[0],pos[1],[aqiFromPM(pm)])
+      count += 1
 
    loaded = time();
    print('Loaded: '+str(loaded-start))
+
+   if count==0:
+      return jsonify({
+         'bounds' : interpolation_bounds,
+         'grid' : []
+      })
+
    grid = interpolator.generate_grid(method=method,index=0)
    done = time();
    print('Interpolation: '+str(done-loaded))
@@ -269,19 +345,6 @@ def partitions():
    partition_info['partitions'] = partitions
    return jsonify(partition_info)
 
-   # cursor = -1
-   # partitions = []
-   # offset = len(current_app.config['KEY_PREFIX'])
-   # while cursor!=0:
-   #    if cursor<0:
-   #       cursor = 0
-   #    values = redis.zscan(key,cursor=cursor)
-   #    cursor = values[0]
-   #    for key,value in values[1]:
-   #       key = key.decode('utf-8')
-   #       partitions.append(key[offset:])
-   #
-   # return jsonify(partitions)
 
 assets = Blueprint('aqi_assets',__name__)
 @assets.route('/assets/<path:path>')
