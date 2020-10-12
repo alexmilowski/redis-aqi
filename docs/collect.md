@@ -76,7 +76,8 @@ date and time format and suffixed with .json extension. For example, `data-2020-
 is the data for the time partition starting at 14:30:00 on 2020-09-02 and
 extending through the end of duration (i.e., 30 minutes till 15:00:00).
 
-It should be noted that the program makes no attempt to align the partitions
-nicely to hour or minute segments. It just partitions from the moment the
-program is started into the intervals requested. Thus, the time specified
-in the file name may be variable.
+It should be noted that output file names are aligned to the partitions
+you specify. For example, if you specify 30 minute periods of time, the
+collection program will store to names with minutes of '00' and '30' only.
+This may cause overwriting of collected data if the collection program is
+restarted.
