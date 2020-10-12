@@ -4,6 +4,7 @@ body {
    max-width: 210mm;
    min-width: 100mm;
    font-family: Palatino;
+   font-size: 12pt;
 }
 
 h1, h2, h3, h4, h5, h6, nav, figure figcaption {
@@ -62,4 +63,16 @@ section.tile, div.tile {
 
 .tile a {
    font-size: 0.8125em;
+}
+
+section > pre {
+   border: 1px solid rgb(200,200,200);
+   background-color: rgba(230,230,230,0.5);
+   padding: 1em 1em;
+   overflow: scroll;
+   width: 100%;
+}
+
+pre > code {
+   white-space: pre;
 }
