@@ -31,13 +31,23 @@ AQI30-2020-10-12T11:30:00PT30M
 
 is the data partition for the time period 11:30-12:00 on 2020-10-12.
 
+## Scaling
+
+The amount of data stored in a single geospatial sorted set is related to the
+partitioning used at ingest. By tuning the duration of the partition, the
+amount of data per key can be tuned up or down (e.g., a longer duration means
+more data).
+
+The partitioning by datetime/duration also allows the keys to be split
+amongst database shards.
+
 
 ## Run with Redis
 
 A local application can run OSS Redis via docker:
 
-    ```
-    docker run -it --rm -p 6379:6379 redis
-    ```
+```
+docker run -it --rm -p 6379:6379 redis
+```
 
 No modules are required.
