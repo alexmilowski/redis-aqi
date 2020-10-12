@@ -55,3 +55,11 @@ section.tile, div.tile {
    border: 1px solid rgb(200,200,200);
    text-align: center;
 }
+
+.tile p {
+   text-align: left;
+}
+
+.tile a {
+   font-size: 0.8125em;
+}
