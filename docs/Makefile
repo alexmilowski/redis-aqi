@@ -32,6 +32,7 @@ $(TARGETDIR)/data.html \
 $(TARGETDIR)/ingest.html \
 $(TARGETDIR)/query.html \
 $(TARGETDIR)/application.html \
+$(TARGETDIR)/k8s.html \
 $(TARGETDIR)/partitioning-geospatial-sensor-data.html
 
 RESOURCES=\

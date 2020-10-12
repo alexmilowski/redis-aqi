@@ -43,6 +43,9 @@ required packages:
 pip install -r requirements.txt
 ```
 
+## The Research
+
+A [complete write-up](/partitioning-geospatial-sensor-data.html) of the methodology behind the approach the is available.
 
 ## What you can do next {.tiles}
 
@@ -68,6 +71,6 @@ data partitions. [More](/query.html)
 
 Understand how to run the demo web application. [More](/application.html)
 
-### The Research {.tile}
+### Kubernetes {.tile}
 
-For more information, read the full research report. [More](/partitioning-geospatial-sensor-data.html)
+Deploy the whole system on Kubernetes. [More](/k8s.html)
