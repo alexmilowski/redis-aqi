@@ -17,7 +17,7 @@ measurements and stored as in geospatial partitions.
 The demonstration application is a simple Flask-based application
 that creates a map-based interactive experience with the date/time and geospatial
 partitions of the data which displays an interpolated (estimated) surface
-of AQI measurements (see [Interpolation](#interpolation)).
+of AQI measurements.
 
 ## Data Sources
 
@@ -33,30 +33,41 @@ sensor data with rolling averages for the particulate matter readings.
 PurpleAir provides documentation for how to turn the PM readings into an [AQI (Air Quality Index)](https://www.airnow.gov/aqi/aqi-basics/)
 measure.
 
+# Setup
+
+All the implementation is written in Python 3. To run the code, all you
+will need to do is create a python environment and install the
+required packages:
+
+```
+pip install -r requirements.txt
+```
+
+
 ## What you can do next {.tiles}
 
 ### Collecting Data {.tile}
 
-How data is collected from the air quality sensors and stored for
-reuse. [Read](/collect.html)
+Understand how data is collected from the air quality sensors and stored for
+reuse. [More](/collect.html)
 
 ### Data Architecture {.tile}
 
-How to setup Redis / Redis Enterprise databases and how the data is stored
-within keys. [Read](/data.html)
+See how data is stored in Redis and understand how to setup Redis / Redis Enterprise databases. [More](/data.html)
 
 ### Ingesting Data {.tile}
 
-How to ingest raw sensor data into Redis. [Read](/ingest.html)
+All about how to ingest raw sensor data into Redis. [More](/ingest.html)
 
 ### Querying Data {.tile}
 
-How to ingest raw sensor data into Redis. [Read](/query.html)
+Understand how geospatial data is queried from the various
+data partitions. [More](/query.html)
 
 ### Demo Application {.tile}
 
-How to run the demo web application. [Read](/application.html)
+Understand how to run the demo web application. [More](/application.html)
 
 ### The Research {.tile}
 
-For more information, read the full research report. [Read](/partitioning-geospatial-sensor-data.html)
+For more information, read the full research report. [More](/partitioning-geospatial-sensor-data.html)
