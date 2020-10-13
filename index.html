@@ -57,6 +57,9 @@
 <p>This project provides a demonstration of the use of the geospatial features of Redis to store and query air quality sensor readings. It provides a complete process of collecting, ingesting, querying, and rendering the raw sensor data to provide AQI (Air Quality Index) measurements in a map-based web application.</p>
 <p>The raw data is collected from air quality sensors (see <a href="#data-sources">Data sources</a>) and is transformed into <a href="https://www.airnow.gov/aqi/aqi-basics/">AQI (Air Quality Index)</a> measurements and stored as in geospatial partitions.</p>
 <p>The demonstration application is a simple Flask-based application that creates a map-based interactive experience with the date/time and geospatial partitions of the data which displays an interpolated (estimated) surface of AQI measurements.</p>
+<figure>
+<img src="example-2020-08-28T13%3a30%3a00PT30M.png" alt="An example interpoliation" /><figcaption aria-hidden="true">An example interpoliation</figcaption>
+</figure>
 <section id="data-sources" class="level2">
 <h2>Data Sources</h2>
 <p><a href="https://www.purpleair.com">PurpleAir sells</a> air quality sensors that measure particulate matter in the air and upload that data to a data repository. They provide access to this <a href="https://docs.google.com/document/d/15ijz94dXJ-YAZLi9iZ_RaBwrZ4KtYeCy08goGBwnbCU/edit#heading=h.2tzq9j55gsj6">aggregated data via an API</a>.</p>
