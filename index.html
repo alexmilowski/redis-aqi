@@ -1,6 +1,94 @@
-<html>
-<head><title>Nothing to see</title></head>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Geospatial Air Quality Sensor Data in Redis</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="site.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <script type="text/javascript" src="site.js"></script>
+</head>
 <body>
-<p>Nothing to see here. Move along, move along, ...</p>
+<nav id="branding">
+
+   <span class="item">
+   <a href="https://redislabs.com/">
+   <img class="logo" src="https://docs.redislabs.com/latest/images/icon_logo/logo-redis-2.svg">
+   </a>
+   </span>
+
+   <span class="item">
+      <a href="./">Project: Redis AQI</a>
+   </span>
+
+   <span class="item">
+      <a href="https://github.com/alexmilowski/redis-aqi">(source)</a>
+   </span>
+
+   <span class="item">
+      <a href="#">(demo)</a>
+   </span>
+
+</nav>
+<header id="title-block-header">
+<h1 class="title">Geospatial Air Quality Sensor Data in Redis</h1>
+</header>
+<p>This project provides a demonstration of the use of the geospatial features of Redis to store and query air quality sensor readings. It provides a complete process of collecting, ingesting, querying, and rendering the raw sensor data to provide AQI (Air Quality Index) measurements in a map-based web application.</p>
+<p>The raw data is collected from air quality sensors (see <a href="#data-sources">Data sources</a>) and is transformed into <a href="https://www.airnow.gov/aqi/aqi-basics/">AQI (Air Quality Index)</a> measurements and stored as in geospatial partitions.</p>
+<p>The demonstration application is a simple Flask-based application that creates a map-based interactive experience with the date/time and geospatial partitions of the data which displays an interpolated (estimated) surface of AQI measurements.</p>
+<section id="data-sources" class="level2">
+<h2>Data Sources</h2>
+<p><a href="https://www.purpleair.com">PurpleAir sells</a> air quality sensors that measure particulate matter in the air and upload that data to a data repository. They provide access to this <a href="https://docs.google.com/document/d/15ijz94dXJ-YAZLi9iZ_RaBwrZ4KtYeCy08goGBwnbCU/edit#heading=h.2tzq9j55gsj6">aggregated data via an API</a>.</p>
+<p>At its simplest, the API returns a list of sensor readings for a given bounding box defined by a pair of coordinate parameters defining the north west and south east corners of the bounds. The resulting data contains the current sensor data with rolling averages for the particulate matter readings.</p>
+<p>PurpleAir provides documentation for how to turn the PM readings into an <a href="https://www.airnow.gov/aqi/aqi-basics/">AQI (Air Quality Index)</a> measure.</p>
+</section>
+<section id="setup" class="level1">
+<h1>Setup</h1>
+<p>All the implementation is written in Python 3. To run the code, all you will need to do is create a python environment and install the required packages:</p>
+<pre><code>pip install -r requirements.txt</code></pre>
+<section id="the-research" class="level2">
+<h2>The Research</h2>
+<p>A <a href="/partitioning-geospatial-sensor-data.html">complete write-up</a> of the methodology behind the approach the is available.</p>
+</section>
+<section id="what-you-can-do-next" class="level2 tiles">
+<h2 class="tiles">What you can do next</h2>
+<section id="collecting-data" class="level3 tile">
+<h3 class="tile">Collecting Data</h3>
+<p>Understand how data is collected from the air quality sensors and stored for reuse. <a href="/collect.html">More</a></p>
+</section>
+<section id="data-architecture" class="level3 tile">
+<h3 class="tile">Data Architecture</h3>
+<p>See how data is stored in Redis and understand how to setup Redis / Redis Enterprise databases. <a href="/data.html">More</a></p>
+</section>
+<section id="ingesting-data" class="level3 tile">
+<h3 class="tile">Ingesting Data</h3>
+<p>All about how to ingest raw sensor data into Redis. <a href="/ingest.html">More</a></p>
+</section>
+<section id="querying-data" class="level3 tile">
+<h3 class="tile">Querying Data</h3>
+<p>Understand how geospatial data is queried from the various data partitions. <a href="/query.html">More</a></p>
+</section>
+<section id="demo-application" class="level3 tile">
+<h3 class="tile">Demo Application</h3>
+<p>Understand how to run the demo web application. <a href="/application.html">More</a></p>
+</section>
+<section id="kubernetes" class="level3 tile">
+<h3 class="tile">Kubernetes</h3>
+<p>Deploy the whole system on Kubernetes. <a href="/k8s.html">More</a></p>
+</section>
+</section>
+</section>
 </body>
 </html>

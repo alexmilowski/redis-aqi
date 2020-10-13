@@ -1,0 +1,29 @@
+@import "base.css";
+
+body {
+   color: #354253;
+}
+
+h1, h2, h3, h4, h5, h6 {
+   /*color: #6d7278;*/
+}
+
+section.tile:hover, div.tile:hover {
+   background-color: rgba(230,230,230,0.5);
+}
+
+section.tiles > *:first-child {
+}
+
+.logo {
+   width: 163px !important;
+}
+
+#branding {
+}
+
+#branding .item {
+   margin-left: 1em;
+   vertical-align: middle;
+   display: inline-block;
+}

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Querying Data</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="site.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <script type="text/javascript" src="site.js"></script>
+</head>
+<body>
+<nav id="branding">
+
+   <span class="item">
+   <a href="https://redislabs.com/">
+   <img class="logo" src="https://docs.redislabs.com/latest/images/icon_logo/logo-redis-2.svg">
+   </a>
+   </span>
+
+   <span class="item">
+      <a href="./">Project: Redis AQI</a>
+   </span>
+
+   <span class="item">
+      <a href="https://github.com/alexmilowski/redis-aqi">(source)</a>
+   </span>
+
+   <span class="item">
+      <a href="#">(demo)</a>
+   </span>
+
+</nav>
+<header id="title-block-header">
+<h1 class="title">Querying Data</h1>
+</header>
+<p>In general, querying data is a simple process of using the <a href="https://redis.io/commands/georadius">GEORADIUS</a> command for the key that corresponds to a particular datatime partition. The result is an encoded member value that can be decoded by splitting the comma-separated value. The first value is the encoding the the sensor and time offset into the partition. The remaining are the sensor readings.</p>
+<section id="querying-quadrangles" class="level2">
+<h2>Querying quadrangles</h2>
+<p>A quadrangle is a rectangular-like area often specified by a northwest and southeast pair of coordinates. As Redis has only radius-based queries, you must compute the center and distance to one of the corners to cover the quadrangle:</p>
+<pre><code>from haversine import haversine, Unit
+
+nw, se = [(38,-124),(36,-120)]
+lat_size = abs(nw[0] - se[0])
+lon_size = abs(nw[1] - se[1])
+
+# inscribe the quadrangle onto a circle with radius from center to
+center = (nw[0] - lat_size/2, nw[1] + lon_size/2)
+radius = haversine(center,nw,unit=Unit.KILOMETERS)</code></pre>
+<p>Using this location and radius may return results outside the quadrangle. The results must be filter for members outside the boundaries:</p>
+<pre><code>import redis
+client = redis.Redis()
+
+result = client.georadius(
+   partition_key,
+   center[1],center[0],
+   radius,unit=&#39;km&#39;,withcoord=True)
+
+for key, pos in result:
+
+   # Note: pos is lon, lat
+
+   lat = pos[1]
+   lon = pos[0]
+
+   # check boundary
+   if lat &gt;= nw[0] or lat &lt;= se[0] or lon &lt;= nw[1] or lon &gt;= se[1]:
+      continue
+
+   yield key, (lat,lon)
+</code></pre>
+</section>
+<section id="supporting-functions" class="level2">
+<h2>Supporting functions</h2>
+<p>The <a href="https://github.com/alexmilowski/redis-aqi/blob/main/geo.py">geo.py</a> library provides helper generator functions that return matching encoded sensor readings for various regions:</p>
+<ul>
+<li><code>query_circle(client, partition_key, center, radius, unit='km', bounds=None)</code> - query via a position and radius (like GEORADIUS)</li>
+<li><code>query_quadrangle(client, partition_key,nw,se)</code> - query via a quadrangle</li>
+<li><code>query_region(client,partition_key,nw,se,size=0.5,by_quadrangles=False)</code> - similar to <code>query_quadrangle</code> by divides the region into subqueries to reduce data transport size per query. By default, query_region uses sequence numbers to compute the covering.</li>
+</ul>
+<p>For example:</p>
+<pre><code>import redis
+client = redis.Redis()
+
+for key, pos in geo.query_quadrangle(client,&#39;AQI30-2020-09-27T00:00:00PT30M&#39;,nw,se):
+   pass</code></pre>
+</section>
+<section id="quadrangles-and-sequence-numbers" class="level2">
+<h2>Quadrangles and Sequence Numbers</h2>
+<p>Regular quadrangles for a region of interest can be calculated by the <em>quadrangles_for_bounds(size,nw,se)</em> function. It partitions the globe into a regular covering of quadrangles and returns the quadrangles that covers the input quadrangle:</p>
+<pre><code>for quadrangle in quadrangles_for_bounds(0.25,nw,se):
+   print(quadrangle)</code></pre>
+<p>In <a href="/partitioning-geospatial-sensor-data.html">the report</a>, the concept of sequence numbers is described. The supporting functions help with sequence number related queries:</p>
+<ul>
+<li><code>sequence_number(size,p)</code> - the sequence for the quadrangle containing the point</li>
+<li><code>quadrangle_for_sequence_number(size,s)</code> - the quadrangle for the sequence number</li>
+<li><code>sequence_numbers_for_bounds(size,nw,se)</code> - the sequence numbers for the quadrangles that cover the input region</li>
+</ul>
+</section>
+</body>
+</html>

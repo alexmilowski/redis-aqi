@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Collecting Data</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="site.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <script type="text/javascript" src="site.js"></script>
+</head>
+<body>
+<nav id="branding">
+
+   <span class="item">
+   <a href="https://redislabs.com/">
+   <img class="logo" src="https://docs.redislabs.com/latest/images/icon_logo/logo-redis-2.svg">
+   </a>
+   </span>
+
+   <span class="item">
+      <a href="./">Project: Redis AQI</a>
+   </span>
+
+   <span class="item">
+      <a href="https://github.com/alexmilowski/redis-aqi">(source)</a>
+   </span>
+
+   <span class="item">
+      <a href="#">(demo)</a>
+   </span>
+
+</nav>
+<header id="title-block-header">
+<h1 class="title">Collecting Data</h1>
+</header>
+<p>The python program <a href="https://github.com/alexmilowski/redis-aqi/blob/main/collect.py">collect.py</a> provides a simple command line interface to data collection that can poll at regular intervals and collect the data from the API. This data is aggregated by the program and can be stored in a variety of ways (e.g., in an S3-compatible object storage).</p>
+<section id="running-data-collection" class="level2">
+<h2>Running data collection</h2>
+<p>This program can be run as:</p>
+<pre><code># collect for the bay area every 5 minutes and partition by 30 minutes storing the result in an S3 bucket
+python collect.py --bounding-box 38.41646632263371,-124.02669995117195,36.98663820370443,-120.12930004882817  --interval 300 --partition 30 --s3-bucket yourbuckethere</code></pre>
+<p>The program partitions data by a simple measuring the elapsed time between collection intervals. You can tune the partitioning by the –interval and –partition parameters. The data is either stored in a local directory, specified by –dir, or in an S3-compatible object storage bucket, specified by –s3-bucket</p>
+<p>The S3 object storage can be configured via any of the <a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">boto3</a> configuration methods. The two simplest methods are to either specify the access key and secret via the command-line paramaeters or in the environemnt variables <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code>.</p>
+<p>In addition, a non-AWS S3-compatible object storage service can be used by providing the endpoint URL. This is provided via the <code>--s3-endpoint</code> parameter.</p>
+<p>Common options for the collection program are:</p>
+<ul>
+<li><p>–bounding-box nwlat,nwlon,selat,selon</p>
+<p>The bounding box for collection; floating poing numbers representing the north west and south east corners of the quadrangle</p></li>
+<li><p>–interval seconds</p>
+<p>The collection interval in seconds</p></li>
+<li><p>–partition minutes</p>
+<p>The elapsed time in seconds at which to partition the data for storage</p></li>
+<li><p>–prefix value</p>
+<p>The data file prefix</p></li>
+<li><p>–dir dir</p>
+<p>A directory in which to store the data files</p></li>
+<li><p>–s3-bucket name</p>
+<p>The S3 bucket name for storage</p></li>
+<li><p>–s3-endpoint url</p>
+<p>A endpoint for the S3 protocol (e.g., https://storage.googleapis.com or <a href="https://docs.aws.amazon.com/general/latest/gr/s3.html">AWS endpoints</a>)</p></li>
+<li><p>–s3-key aws_access_key_id</p>
+<p>The AWS access key</p></li>
+<li><p>–s3-secret aws_secret_access_key</p>
+<p>The AWS secret access key</p></li>
+</ul>
+</section>
+<section id="where-data-is-stored" class="level2">
+<h2>Where data is stored</h2>
+<p>The collection program retrieves data from the API at the interval you specify. It will aggregate the collected data until the partition time limit has been reached and then store the tabular data as a JSON artifact. By default, the data is sent to stdout in <a href="https://tools.ietf.org/html/rfc7464">JSON Text Sequences</a>.</p>
+<p>In each case, the file name generated is the prefix appended with the ISO 8601 date and time format and suffixed with .json extension. For example, <code>data-2020-09-02T14:30:00.json</code> is the data for the time partition starting at 14:30:00 on 2020-09-02 and extending through the end of duration (i.e., 30 minutes till 15:00:00).</p>
+<p>It should be noted that output file names are aligned to the partitions you specify. For example, if you specify 30 minute periods of time, the collection program will store to names with minutes of ‘00’ and ‘30’ only. This may cause overwriting of collected data if the collection program is restarted.</p>
+</section>
+</body>
+</html>

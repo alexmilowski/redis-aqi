@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Ingesting Data</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="site.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <script type="text/javascript" src="site.js"></script>
+</head>
+<body>
+<nav id="branding">
+
+   <span class="item">
+   <a href="https://redislabs.com/">
+   <img class="logo" src="https://docs.redislabs.com/latest/images/icon_logo/logo-redis-2.svg">
+   </a>
+   </span>
+
+   <span class="item">
+      <a href="./">Project: Redis AQI</a>
+   </span>
+
+   <span class="item">
+      <a href="https://github.com/alexmilowski/redis-aqi">(source)</a>
+   </span>
+
+   <span class="item">
+      <a href="#">(demo)</a>
+   </span>
+
+</nav>
+<header id="title-block-header">
+<h1 class="title">Ingesting Data</h1>
+</header>
+<section id="general-parameters" class="level2">
+<h2>General Parameters</h2>
+<p>Data is ingest by reading a data source and using the <a href="https://redis.io/commands/geoadd">GEOADD</a> command. The individual commands are pipelined into batches of 1000 without transactions.</p>
+<p>When the data is read, the key for correct partition is computed for the particular sensor reading. As such, the input data does not need to match the output partitioning. That is, a single input data file can span multiple partitions.</p>
+<p>The <a href="https://github.com/alexmilowski/redis-aqi/blob/main/ingest.py">ingest.py</a> program has the following general parameters:</p>
+<ul>
+<li><em>–index</em> - any number of index parameters can be specified to pick specific readings from the source. Otherwise, all of the readings will be encoded</li>
+<li><em>–precision nnn</em> - the number of digits of precision can be specified for the encoded reading values. If not specified, the raw readings will be encoded.</li>
+<li><em>–partition mm</em> - the datetime data partition size in minutes. The default is 30.</li>
+<li><em>–host address</em> - the Redis host</li>
+<li><em>–port nnnn</em> - the Redis port</li>
+<li><em>–password passwd</em> - the Redis password</li>
+<li><em>–confirm</em> - output name the url or file being ingested (useful for logs or debugging)</li>
+</ul>
+<p>The –type parameter controls how the source specification is interpreted and from where the source data is read. The values allowed are:</p>
+<ul>
+<li><em>data</em> - (default) a set of local files</li>
+<li><em>urls</em> - a set of urls</li>
+<li><em>now</em> - periods of time near now</li>
+<li><em>at</em> - periods of time from the range specified</li>
+</ul>
+<p>The <em>now</em> and <em>at</em> source types only work with data stored in S3, accessible by URI, and labeled in a regular scheme. The collection program ensures the data store in S3 is labeled with a scheme that is compatible with this ingest process.</p>
+<p>If the data is stored in an S3-compatible service, you must specify the URL of the bucket via the <em>–bucket-url</em> parameter. Direct access to the sources via the S3 API is not currently supported. A simple way to enable access is to make the bucket public or to setup a local proxy.</p>
+<p>Note: The python requests library is used to access the data. Bearer access tokens and other authentication methods are simple enhancements that can be added to the <code>ingest_urls</code> function in <a href="https://github.com/alexmilowski/redis-aqi/blob/main/ingest.py">ingest.py</a>.</p>
+</section>
+<section id="ingesting-via-local-files" class="level2">
+<h2>Ingesting via local files:</h2>
+<p>Local files are ingested using the <em>–type data</em> parameter. The source files are specified on the command:</p>
+<pre><code>python ingest.py --confirm --precision 0 --index 1 --type data file1.json file2.json ...</code></pre>
+</section>
+<section id="ingesting-via-urls" class="level2">
+<h2>Ingesting via URLs:</h2>
+<p>Locations specified generically by URLs are ingested using the <em>–type urls</em> parameter. The source urls are specified on the command:</p>
+<pre><code>python ingest.py --confirm --precision 0 --index 1 --type data http://data.example.org/file1.json http://data.example.org/file2.json ...</code></pre>
+</section>
+<section id="ingesting-by-date-and-time" class="level2">
+<h2>Ingesting by Date and Time</h2>
+<p>Once you have made your bucket accessible by a URL, there is a regular bucket prefix. For example, a google object storage bucket might have the common prefix:</p>
+<pre><code>https://storage.googleapis.com/yourbuckethere/data-</code></pre>
+<p>If the data was collected with <a href="https://github.com/alexmilowski/redis-aqi/blob/main/collect.py">collect.py</a>, a partition for a certain datetime will just be the ISO 8601 datetime with the ‘.json’ suffix. Thus, the ingest program can just compute certain datetime values to address collected data.</p>
+<p>The <em>–ignore-not-found</em> parameter will ignore data partitions that are missing.</p>
+<p>If you want the partitions nearest the current time, the <em>–type now</em> parameter will compute the current and previous datetime partition as URLs.</p>
+<p>If you specify <em>type at</em>, the list of sources are datetime ranges specified by ISO 8601 formatted datetimes that are expanded by these rules:</p>
+<ul>
+<li>a single date and time that represents a single source partition (e.g., <code>2020-09-10T11:30:00</code>)</li>
+<li>a date time range specify by the start and end datetime separated by a comma (e.g., <code>2020-09-10T00:00:00,2020-09-10T23:30:00</code>). The default partition time of 30 minutes is assumed.</li>
+<li>a date time range with the partition specified as a third comma-separated value (e.g., <code>2020-09-10T00:00:00,2020-09-10T23:30:00,30</code>)</li>
+</ul>
+<p>The values are expanded into URLs and processed in the same way as if the urls where specified via the <em>–type urls</em> parameter.</p>
+<p>For example, this invocation loads all the 30 minute partitions for the date 2020-09-10:</p>
+<pre><code>python ingest.py --confirm --precision 0 --index 1 --type at --bucket-url https://storage.googleapis.com/yourbuckethere/data- 2020-09-10T00:00:00,2020-09-10T23:30:00</code></pre>
+</section>
+</body>
+</html>

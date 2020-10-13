@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Demo Application</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="site.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <script type="text/javascript" src="site.js"></script>
+</head>
+<body>
+<nav id="branding">
+
+   <span class="item">
+   <a href="https://redislabs.com/">
+   <img class="logo" src="https://docs.redislabs.com/latest/images/icon_logo/logo-redis-2.svg">
+   </a>
+   </span>
+
+   <span class="item">
+      <a href="./">Project: Redis AQI</a>
+   </span>
+
+   <span class="item">
+      <a href="https://github.com/alexmilowski/redis-aqi">(source)</a>
+   </span>
+
+   <span class="item">
+      <a href="#">(demo)</a>
+   </span>
+
+</nav>
+<header id="title-block-header">
+<h1 class="title">Demo Application</h1>
+</header>
+<p>The demo application is a flask-based application that you can run directly. All it needs is the connection parameters for the Redis database.</p>
+<ol type="1">
+<li><p>Start the web application:</p>
+<pre><code>python app.py</code></pre>
+<p>You can connect to a Redis database with the following parameters:</p>
+<ul>
+<li><p>–host ip</p>
+<p>The Redis host address</p></li>
+<li><p>–port nnn</p>
+<p>The Redis port</p></li>
+<li><p>–password password</p>
+<p>The Redis password</p></li>
+</ul>
+<p>The data is stored in Redis by ISO 8601 dateTime labeled partitions. You can provide alternate key prefix and partition period information by:</p>
+<ul>
+<li>–key-prefix prefix</li>
+<li>–partition nnn</li>
+</ul>
+<p>Note: The partition time is in minutes.</p>
+<p>Alternatively, all of the above settings can be set via environment variables or in the Flask configuration file (via the –config option).</p>
+<p>The keys are:</p>
+<ul>
+<li>REDIS_HOST</li>
+<li>REDIS_PORT</li>
+<li>REDIS_PASSWORD</li>
+<li>KEY_PREFIX</li>
+<li>PARTITION</li>
+</ul></li>
+<li><p>Visit http://localhost:5000/</p></li>
+</ol>
+</body>
+</html>

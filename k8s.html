@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Deploy on Kubernetes</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="site.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <script type="text/javascript" src="site.js"></script>
+</head>
+<body>
+<nav id="branding">
+
+   <span class="item">
+   <a href="https://redislabs.com/">
+   <img class="logo" src="https://docs.redislabs.com/latest/images/icon_logo/logo-redis-2.svg">
+   </a>
+   </span>
+
+   <span class="item">
+      <a href="./">Project: Redis AQI</a>
+   </span>
+
+   <span class="item">
+      <a href="https://github.com/alexmilowski/redis-aqi">(source)</a>
+   </span>
+
+   <span class="item">
+      <a href="#">(demo)</a>
+   </span>
+
+</nav>
+<header id="title-block-header">
+<h1 class="title">Deploy on Kubernetes</h1>
+</header>
+<p>This is a complete guide to deploying the whole system on Kubernetes. The data collection, ingest, Redis, and web application can be deployed within a single namespace. Kubernetes allows for a scale-out deployment of ingest and the Redis database. The web application can be scaled independently from the database and ingest workloads.</p>
+<section id="redis" class="level2">
+<h2>Redis</h2>
+<section id="single-instance" class="level3">
+<h3>Single instance</h3>
+</section>
+<section id="scale-out-database" class="level3">
+<h3>Scale-out database</h3>
+</section>
+</section>
+<section id="data-collection" class="level2">
+<h2>Data Collection</h2>
+</section>
+<section id="ingest" class="level2">
+<h2>Ingest</h2>
+</section>
+<section id="web-application" class="level2">
+<h2>Web Application</h2>
+</section>
+</body>
+</html>

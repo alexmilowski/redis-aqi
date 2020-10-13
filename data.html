@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Data Architecture</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="site.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <script type="text/javascript" src="site.js"></script>
+</head>
+<body>
+<nav id="branding">
+
+   <span class="item">
+   <a href="https://redislabs.com/">
+   <img class="logo" src="https://docs.redislabs.com/latest/images/icon_logo/logo-redis-2.svg">
+   </a>
+   </span>
+
+   <span class="item">
+      <a href="./">Project: Redis AQI</a>
+   </span>
+
+   <span class="item">
+      <a href="https://github.com/alexmilowski/redis-aqi">(source)</a>
+   </span>
+
+   <span class="item">
+      <a href="#">(demo)</a>
+   </span>
+
+</nav>
+<header id="title-block-header">
+<h1 class="title">Data Architecture</h1>
+</header>
+<section id="sizing" class="level1">
+<h1>Sizing</h1>
+<p>This application uses the <a href="https://redis.io/commands#geo">geospatial features of OSS Redis</a> which have been available since version 3.2.0. The sensor data stored can store several gigabytes of sensor readings per day. The amount of data can increase or decrease depending on the interval and the geospatial region of collection.</p>
+<section id="key-structure" class="level2">
+<h2>Key Structure</h2>
+<p>Data is partitioned by a time period (e.g., 30 minutes) and stored into a single geospatial sorted set via <a href="https://redis.io/commands/geoadd">GEOADD</a>.</p>
+<p>Each partition is labeled:</p>
+<pre><code>prefix + datetime + duration</code></pre>
+<p>The datetime and duration are in <a href="https://en.wikipedia.org/wiki/ISO_8601">ISO 8601 format</a>.</p>
+<p>For example, the default prefix is <code>AQI30-</code> and for a duration of 30 minutes:</p>
+<pre><code>AQI30-2020-10-12T11:30:00PT30M</code></pre>
+<p>is the data partition for the time period 11:30-12:00 on 2020-10-12.</p>
+</section>
+<section id="how-sensor-data-is-stored" class="level2">
+<h2>How Sensor Data is Stored</h2>
+<p>The score in a geospatial sorted set is a value computed from the location (a geohash). As such, all the data for the sensor is encoded in the member that is added to the set.</p>
+<p>For every reading, we have two basic identifying facets:</p>
+<ul>
+<li><em>an identifier for the sensor</em>: This is typically a value assigned by the sensor network (i.e., an identifier assigned by PurpleAir).</li>
+<li><em>a time offset from the start time of partition</em>: The time of the sensor reading minus the start time of the partition is a simple offset value. This value can be rounded to minutes if precision is not required.</li>
+</ul>
+<p>In addition, we have a set of reading values to store. In the case of air quality sensors, these are the particulate matter readings for the current time and a set of average values over different time periods (e.g., last 10 minutes, last 30 minutes, etc.).</p>
+<p>For this application the sensor readings are encoded as a comma separated set of values where the first value is:</p>
+<pre><code>sensor + &#39;@&#39; + offset</code></pre>
+<p>and the remaining values are the retained sensor reading values rounded to the desired precision. The ingestion process can choose which sensor readings to ingest and the desired precision to limit the size of the stored data or excessive number representation for transport.</p>
+<p>For example, for a sensor with id ‘B123’ whose reading was taken at 2020-10-12T11:34:32 and the set of readings (145.5,150,148.9) is encoded as the member:</p>
+<pre><code>B123@4,145.5,150,148.9</code></pre>
+</section>
+<section id="idempotency" class="level2">
+<h2>Idempotency</h2>
+<p>The encoding of data as members ensures that the same sensor reading will encode to the same set member. As such, ingesting the same data more than once will still result in the set geospatial set. This make ingest idempotent.</p>
+<p>As such, when ingest processes stop or fail, they can be restarted with overlapping time periods. This ensures that all the data is ingested without needing to query for the correct starting point. In turn, this makes the operation of the data DevOps easier.</p>
+</section>
+<section id="scaling" class="level2">
+<h2>Scaling</h2>
+<p>The amount of data stored in a single geospatial sorted set is related to the partitioning used at ingest. By tuning the duration of the partition, the amount of data per key can be tuned up or down (e.g., a longer duration means more data).</p>
+<p>The partitioning by datetime/duration also allows the keys to be split amongst database shards.</p>
+</section>
+<section id="database" class="level2">
+<h2>Database</h2>
+<p>A single database endpoint is all that is necessary to run the application. You can run a local database for testing purposes via docker:</p>
+<pre><code>docker run -it --rm -p 6379:6379 redis</code></pre>
+<p>No modules are required.</p>
+</section>
+</section>
+</body>
+</html>
