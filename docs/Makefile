@@ -37,16 +37,13 @@ $(TARGETDIR)/partitioning-geospatial-sensor-data.html
 
 RESOURCES=\
 $(TARGETDIR)/site.js \
+$(TARGETDIR)/example-interpolation.png \
 $(TARGETDIR)/generic-sensor-network.svg \
 $(TARGETDIR)/sequence-numbers.png \
 $(TARGETDIR)/quadrangle-coverings.png
 
 
-all: $(CSS) $(DOCS) $(RESOURCES) custom
-
-custom:
-	cp ../example-2020-08-28T13:30:00PT30M.png $(TARGETDIR)
-
+all: $(CSS) $(DOCS) $(RESOURCES)
 
 clean.html:
 	rm -f $(DOCS)

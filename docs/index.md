@@ -19,7 +19,7 @@ that creates a map-based interactive experience with the date/time and geospatia
 partitions of the data which displays an interpolated (estimated) surface
 of AQI measurements.
 
-![An example interpoliation](example-2020-08-28T13%3a30%3a00PT30M.png)
+![An example interpoliation](example-interpolation.png)
 
 ## Data Sources
 
