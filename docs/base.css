@@ -65,9 +65,11 @@ section.tile, div.tile {
    font-size: 0.8125em;
 }
 
-section > pre {
+pre {
    border: 1px solid rgb(200,200,200);
-   background-color: rgba(230,230,230,0.5);
+   background-color: #f6f8fa;
+   font-size: 0.8125em;
+   line-height: 1.375em;
    padding: 1em 1em;
    overflow: scroll;
    width: 100%;
@@ -79,4 +81,8 @@ pre > code {
 
 li {
    margin-bottom: 0.75em;
+}
+
+li > ul {
+   margin-top: 0.75em;
 }
