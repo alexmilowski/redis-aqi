@@ -13,6 +13,9 @@ that creates a map-based interactive experience with the date/time and geospatia
 partitions of the data which displays an interpolated (estimated) surface
 of AQI measurements (see [Interpolation](#interpolation)).
 
+The following is a quick overview and instructions for running the data
+collection, ingest, and application. A complete overview is available on the [website](https://alexmilowski.github.io/redis-aqi/).
+
 # Data sources
 
 [PurpleAir sells](https://www.purpleair.com) air quality sensors that measure
@@ -35,7 +38,7 @@ You can create a python environment with all the required packages by:
 pip install -r requirements.txt
 ```
 
-# Collecting dData
+# Collecting Data
 
 The python program [collect.py](collect.py) provides a simple command line
 interface to data collection that can poll at regular intervals and
@@ -98,60 +101,6 @@ date and time format and suffixed with .json extension. For example, `data-2020-
 is the data for the time partition starting at 14:30:00 on 2020-09-02 and
 extending through the end of duration (i.e., 30 minutes till 15:00:00).
 
-
-
-# Interpolation
-
-Interpolation of AQI values relies on having an atmospheric model for
-the distribution of particulate matter that takes into account weather,
-wind conditions, elevation, etc. Absent such a model, standard
-interpolation methods such as [linear interpolation](https://en.wikipedia.org/wiki/Linear_interpolation) can be used as a gross estimation of the AQI
-over a geospatial area.
-
-The following example (from the Bay Area 2028-08-28) uses the krige exponential method of interpolation:
-
-![Example interpolation of AQI from 2020-08-28](example-2020-08-28T13%3a30%3a00PT30M.png)
-
-You can use a variety of method to interpolate a grid of AQI values from
-the observed values. The python program [interpolate.py](interpolate.py)
-provides an implementation basic linear, cubic, nearest, and krige-based
-methods of interpolation as a library as well as a program.
-
-You can try the interpolation on collected data by:
-
-```
-python interpolate.py url [url ...]
-```
-
-The options are:
-
- * --verbose
-
-   enable verbose output
- * --size nn
-
-   The grid mesh size (integer)
- * --resolution nn.nnn
-
-   The grid resolution (float)
- * --index n
-
-   The pm measurement to use - a value from 0 to 6
- * --method linear|cubic|nearest|krige-linear|krige-power|krige-gaussian|krige-spherical|krige-exponential|krige-hole-effect
- * --bounding-box' nwlat,nwlon,selat,selon
-
-   The bounding box (quadrangle) for the interpolation
-
-Note: You should only specify --size or --resolution but not both.
-
-The library provides a function called `aqiFromPM` for calculating the AQI
-from the PM value.
-
-There is also a `AQIInterpolator` class that can be used directly and
-provides the same functionality as the command-line program.
-
-**Note:** The image was generated via the Web application. See the configuration
-of Redis and the Web application for how to produce your own map-based interpolations.
 
 # Running the application
 
@@ -250,231 +199,55 @@ as a quick test.
 
  1. Visit http://localhost:5000/
 
-## Running on Kubernetes
+# Interpolation
 
-The whole application can be run on Kubernetes:
+Interpolation of AQI values relies on having an atmospheric model for
+the distribution of particulate matter that takes into account weather,
+wind conditions, elevation, etc. Absent such a model, standard
+interpolation methods such as [linear interpolation](https://en.wikipedia.org/wiki/Linear_interpolation) can be used as a gross estimation of the AQI
+over a geospatial area.
 
- * *Data collection* - a long-running K8s Job,
- * *Redis* - a simple deployment or via the [Redis Enterprise Operator](https://github.com/RedisLabs/redis-enterprise-k8s-docs),
- * *Ingestion* - scheduled or ad-hoc K8s Jobs,
- * *Web Application* - via a Deployment.
+The following example (from the Bay Area 2028-08-28) uses the krige exponential method of interpolation:
 
-For this setup, we'll using a single namespace:
+![Example interpolation of AQI from 2020-08-28](example-2020-08-28T13%3a30%3a00PT30M.png)
 
-```
-kubectl create namespace redis-aqi
-kubens redis-aqi
-```
+You can use a variety of method to interpolate a grid of AQI values from
+the observed values. The python program [interpolate.py](interpolate.py)
+provides an implementation basic linear, cubic, nearest, and krige-based
+methods of interpolation as a library as well as a program.
 
-## Data Collection
-
-A long-running Kubernetes job can be used to collect data. The job specification is located in [collection.yaml](collection.yaml).
-
-### Setup the parameters
-
- 1. Create the S3 credentials in a Secret:
-
-   ```
-   kubectl create secret generic s3 --from-literal=access-key-id=... "--from-literal=secret-access-key=..."
-   ```
-
-   For example, if you have stored your access key and secret in the standard environment variables:
-
-   ```
-   kubectl create secret generic s3 "--from-literal=access-key-id=${AWS_ACCESS_KEY_ID}" "--from-literal=secret-access-key=${AWS_SECRET_ACCESS_KEY}"
-   ```
-
- 1. Store the collection script in a ConfigMap:
-
-   ```
-   kubectl create configmap collect --from-file=collect.py=collect.py
-   ```
-
- 1. Setup the collection parameters
-
-   ```
-   kubectl create configmap parameters \
-   --from-literal=box=38.41646632263371,-124.02669995117195,36.98663820370443,-120.12930004882817 \
-   --from-literal=endpoint=https://storage.googleapis.com \
-   --from-literal=bucket=yourbuckethere \
-   --from-literal=interval=300 \
-   --from-literal=partition=30
-   ```
-
-   Note: Amazon S3 endpoints can be [found here](https://docs.aws.amazon.com/general/latest/gr/s3.html) or
-   you can omit the --endpoint parameter from the [collection.yaml](collection.yaml) job specification.
-
-**Note:** if you need to update the python script or parameters, you can use the --dry-run parameter to kubectl. For example, the script can be updated with:
+You can try the interpolation on collected data by:
 
 ```
-kubectl create configmap collect --from-file=collect.py=collect.py --dry-run -o yaml | kubectl apply -f -
+python interpolate.py url [url ...]
 ```
 
-### Start the collection job
+The options are:
 
-The [collection.yaml](collection.yaml) file contains the job description. It can
-be used without changes as the parameters are all in the ConfigMap and Secret
-that was previously created.
+   * --verbose
 
-Just the start the collection job via:
+     enable verbose output
+   * --size nn
 
-```
-kubectl apply -f collection.yaml
-```
+     The grid mesh size (integer)
+   * --resolution nn.nnn
 
-### Monitoring collection
+     The grid resolution (float)
+   * --index n
 
-You can monitor the collection job by just examining the logs:
+     The pm measurement to use - a value from 0 to 6
+   * --method linear|cubic|nearest|krige-linear|krige-power|krige-gaussian|krige-spherical|krige-exponential|krige-hole-effect
+   * --bounding-box' nwlat,nwlon,selat,selon
 
-```
-kubectl logs job/purpeair-collection
-```
+     The bounding box (quadrangle) for the interpolation
 
-## Deploying Redis
+Note: You should only specify --size or --resolution but not both.
 
-You need a redis database to ingest and provide data to the application.
+The library provides a function called `aqiFromPM` for calculating the AQI
+from the PM value.
 
-### Using a single-pod deployment
+There is also a `AQIInterpolator` class that can be used directly and
+provides the same functionality as the command-line program.
 
- 1. Set your desired password in [redis.conf](redis.conf)
- 1. Store the configuration in a ConfigMap:
-
-    ```
-    kubectl create configmap redis-config --from-file=redis.conf=redis.conf
-    ```
-
- 1. Deploy Redis:
-
-    ```
-    kubectl apply -f redis.yaml
-    ```
-
- 1. Deploy the Redis service:
-
-    ```
-    kubectl apply -f redis-service.yaml
-    ```
-
-### Using Redis Enterprise
-
-If you don't have the operator installed, see the
-[operator documentation](https://github.com/RedisLabs/redis-enterprise-k8s-docs)
-for installation instructions.
-
-If you don't have a cluster, you can create one by creating a custom resource
-in the namespace (again, see the operator documentation). A small cluster
-might be something like:
-
-```
-cat <<EOF > cluster.yaml
-apiVersion: app.redislabs.com/v1
-kind: RedisEnterpriseCluster
-metadata:
-  name: test
-spec:
-  nodes: 3
-  redisEnterpriseNodeResources:
-    limits:
-      cpu: 3
-      memory: 4Gi
-    requests:
-      cpu: 2
-      memory: 4Gi
-EOF
-kubectl apply -f cluster.yaml
-```
-
-Once you have a cluster, you can just request a database of a certain size:
-
-```
-cat <<EOF > db.yaml
-apiVersion: app.redislabs.com/v1alpha1
-kind: RedisEnterpriseDatabase
-metadata:
-  name: aqi
-spec:
-  memorySize: 2GB
-  redisEnterpriseCluster:
-    name: test
-EOF
-kubectl apply -f db.yaml
-```
-
-The operator will create a service for the database called 'aqi' and the
-connection parameters are contained in a secret called 'secret/redb-aqi'.
-Specifically, the database password is stored in this secret.
-
-The connection host is just the service DNS name (aqi.redis-aqi.svc)
-and the port is the port listed on the service:
-
-```
-kubectl get service/aqi
-```
-
-### Configuring database access
-
-This application use a secret called 'redis' for the host, password, and
-port.
-
-Create this secret with the parameters for your database:
-
-```
-kubectl create secret generic redis --from-literal=service=aqi.redis-aqi.svc --from-literal=port=... --from-literal=password=...
-```
-
-## Ingesting Data
-
-Data ingestion can be run by the job [ingest.yaml](ingest.yaml). There is a
-program called [job.py](job.py) that will adjust the parameters for the
-particular date range you want to ingest along with other parameters.
-
-First, store the ingest script in a ConfigMap:
-
-```
-kubectl create configmap ingest --from-file=ingest.py=ingest.py
-```
-
-The data will be pulled from the object storage where your data collection
-is placing partitoins of data. For example, to ingest a single day:
-
-```
-python job.py --index 1 --type at 2020-09-14T00:00:00,2020-09-14T23:30:00 --name ingest-2020-09-14 | kubectl apply -f -
-```
-
-The configuration of the job is from:
-
- * The object storage parameters are taken from `configmap/parameters` that
-   was created when you setup data collection.
- * The redis connection parameters are via `secret/redis`
- * The remaining parameters are set via the job.py configuration options
-
-The job.py program has the same parameters as ingest.py. See their usage to
-adjust the job creation.
-
-## Running the Web application
-
-The deployment [app.yaml](app.yaml) will deploy the Flask-based Web application
-and relies on the image `alexmilowski/flask-aqi:2020-09-14-002`.
-
-You can deploy the application via:
-
-```
-kubectl apply -f app.yaml
-```
-
-You can build your own version of this image via:
-
-```
-docker build . -t you/yourimage:version
-```
-
-and then just change the image reference in [app.yaml](app.yaml).
-
-Once deployed, you can either create an ingress or forward the port to your
-local machine:
-
-```
-kubectl port-forward `kubectl get pods --selector app=aqi -o jsonpath='{.items[0].metadata.name}'` 5000
-```
-
-Once forwarded, you can visit http://localhost:5000/
+**Note:** The image was generated via the Web application. See the configuration
+of Redis and the Web application for how to produce your own map-based interpolations.
