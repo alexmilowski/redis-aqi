@@ -42,27 +42,167 @@
    </span>
 
 </nav>
+
+<nav id="secondary">
+<span class="item"><a href="collect.html">Collecting Data</a></span>
+<span class="item"><a href="data.html">Data Architecture</a></span>
+<span class="item"><a href="ingest.html">Ingesting Data</a></span>
+<span class="item"><a href="query.html">Querying Data</a></span>
+<span class="item"><a href="application.html">Demo Application</a></span>
+<span class="item"><a href="k8s.html">Kubernetes</a></span>
+</nav>
 <header id="title-block-header">
 <h1 class="title">Deploy on Kubernetes</h1>
 </header>
-<p>This is a complete guide to deploying the whole system on Kubernetes. The data collection, ingest, Redis, and web application can be deployed within a single namespace. Kubernetes allows for a scale-out deployment of ingest and the Redis database. The web application can be scaled independently from the database and ingest workloads.</p>
-<section id="redis" class="level2">
-<h2>Redis</h2>
-<section id="single-instance" class="level3">
-<h3>Single instance</h3>
-</section>
-<section id="scale-out-database" class="level3">
-<h3>Scale-out database</h3>
-</section>
-</section>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#data-collection">Data Collection</a>
+<ul>
+<li><a href="#setup-the-parameters">Setup the parameters</a></li>
+<li><a href="#start-the-collection-job">Start the collection job</a></li>
+<li><a href="#monitoring-collection">Monitoring collection</a></li>
+</ul></li>
+<li><a href="#deploying-redis">Deploying Redis</a>
+<ul>
+<li><a href="#using-a-single-pod-deployment">Using a single-pod deployment</a></li>
+<li><a href="#using-redis-enterprise">Using Redis Enterprise</a></li>
+<li><a href="#configuring-database-access">Configuring database access</a></li>
+</ul></li>
+<li><a href="#ingesting-data">Ingesting Data</a></li>
+<li><a href="#running-the-web-application">Running the Web application</a></li>
+</ul>
+</nav>
+<p>This is a complete guide to deploying the whole system on Kubernetes. The data collection, ingest, Redis, and web application can be deployed within a single namespace. Kubernetes allows for a scale-out deployment of ingest and the Redis database. The web application can also be scaled independently from the database and ingest workloads.</p>
+<p>The whole application can be run on Kubernetes:</p>
+<ul>
+<li><em>Data collection</em> - a long-running K8s Job,</li>
+<li><em>Redis</em> - a simple deployment or via the <a href="https://github.com/RedisLabs/redis-enterprise-k8s-docs">Redis Enterprise Operator</a>,</li>
+<li><em>Ingestion</em> - scheduled or ad-hoc K8s Jobs,</li>
+<li><em>Web Application</em> - via a Deployment.</li>
+</ul>
+<p>For this setup, we’ll using a single namespace:</p>
+<pre><code>kubectl create namespace redis-aqi
+kubens redis-aqi</code></pre>
 <section id="data-collection" class="level2">
 <h2>Data Collection</h2>
+<p>A long-running Kubernetes job can be used to collect data. The job specification is located in <a href="collection.yaml">collection.yaml</a>.</p>
+<section id="setup-the-parameters" class="level3">
+<h3>Setup the parameters</h3>
+<ol type="1">
+<li><p>Create the S3 credentials in a Secret:</p>
+<pre><code>kubectl create secret generic s3 --from-literal=access-key-id=... &quot;--from-literal=secret-access-key=...&quot;</code></pre>
+<p>For example, if you have stored your access key and secret in the standard environment variables:</p>
+<pre><code>kubectl create secret generic s3 &quot;--from-literal=access-key-id=${AWS_ACCESS_KEY_ID}&quot; &quot;--from-literal=secret-access-key=${AWS_SECRET_ACCESS_KEY}&quot;</code></pre></li>
+<li><p>Store the collection script in a ConfigMap:</p>
+<pre><code>kubectl create configmap collect --from-file=collect.py=collect.py</code></pre></li>
+<li><p>Setup the collection parameters</p>
+<pre><code>kubectl create configmap parameters \
+--from-literal=box=38.41646632263371,-124.02669995117195,36.98663820370443,-120.12930004882817 \
+--from-literal=endpoint=https://storage.googleapis.com \
+--from-literal=bucket=yourbuckethere \
+--from-literal=interval=300 \
+--from-literal=partition=30</code></pre>
+<p>Note: Amazon S3 endpoints can be <a href="https://docs.aws.amazon.com/general/latest/gr/s3.html">found here</a> or you can omit the –endpoint parameter from the <a href="collection.yaml">collection.yaml</a> job specification.</p></li>
+</ol>
+<p><strong>Note:</strong> if you need to update the python script or parameters, you can use the –dry-run parameter to kubectl. For example, the script can be updated with:</p>
+<pre><code>kubectl create configmap collect --from-file=collect.py=collect.py --dry-run -o yaml | kubectl apply -f -</code></pre>
 </section>
-<section id="ingest" class="level2">
-<h2>Ingest</h2>
+<section id="start-the-collection-job" class="level3">
+<h3>Start the collection job</h3>
+<p>The <a href="collection.yaml">collection.yaml</a> file contains the job description. It can be used without changes as the parameters are all in the ConfigMap and Secret that was previously created.</p>
+<p>Just the start the collection job via:</p>
+<pre><code>kubectl apply -f collection.yaml</code></pre>
 </section>
-<section id="web-application" class="level2">
-<h2>Web Application</h2>
+<section id="monitoring-collection" class="level3">
+<h3>Monitoring collection</h3>
+<p>You can monitor the collection job by just examining the logs:</p>
+<pre><code>kubectl logs job/purpeair-collection</code></pre>
+</section>
+</section>
+<section id="deploying-redis" class="level2">
+<h2>Deploying Redis</h2>
+<p>You need a redis database to ingest and provide data to the application.</p>
+<section id="using-a-single-pod-deployment" class="level3">
+<h3>Using a single-pod deployment</h3>
+<ol type="1">
+<li><p>Set your desired password in <a href="redis.conf">redis.conf</a></p></li>
+<li><p>Store the configuration in a ConfigMap:</p>
+<pre><code>kubectl create configmap redis-config --from-file=redis.conf=redis.conf</code></pre></li>
+<li><p>Deploy Redis:</p>
+<pre><code>kubectl apply -f redis.yaml</code></pre></li>
+<li><p>Deploy the Redis service:</p>
+<pre><code>kubectl apply -f redis-service.yaml</code></pre></li>
+</ol>
+</section>
+<section id="using-redis-enterprise" class="level3">
+<h3>Using Redis Enterprise</h3>
+<p>If you don’t have the operator installed, see the <a href="https://github.com/RedisLabs/redis-enterprise-k8s-docs">operator documentation</a> for installation instructions.</p>
+<p>If you don’t have a cluster, you can create one by creating a custom resource in the namespace (again, see the operator documentation). A small cluster might be something like:</p>
+<pre><code>cat &lt;&lt;EOF &gt; cluster.yaml
+apiVersion: app.redislabs.com/v1
+kind: RedisEnterpriseCluster
+metadata:
+  name: test
+spec:
+  nodes: 3
+  redisEnterpriseNodeResources:
+    limits:
+      cpu: 3
+      memory: 4Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+EOF
+kubectl apply -f cluster.yaml</code></pre>
+<p>Once you have a cluster, you can just request a database of a certain size:</p>
+<pre><code>cat &lt;&lt;EOF &gt; db.yaml
+apiVersion: app.redislabs.com/v1alpha1
+kind: RedisEnterpriseDatabase
+metadata:
+  name: aqi
+spec:
+  memorySize: 2GB
+  redisEnterpriseCluster:
+    name: test
+EOF
+kubectl apply -f db.yaml</code></pre>
+<p>The operator will create a service for the database called ‘aqi’ and the connection parameters are contained in a secret called ‘secret/redb-aqi’. Specifically, the database password is stored in this secret.</p>
+<p>The connection host is just the service DNS name (aqi.redis-aqi.svc) and the port is the port listed on the service:</p>
+<pre><code>kubectl get service/aqi</code></pre>
+</section>
+<section id="configuring-database-access" class="level3">
+<h3>Configuring database access</h3>
+<p>This application use a secret called ‘redis’ for the host, password, and port.</p>
+<p>Create this secret with the parameters for your database:</p>
+<pre><code>kubectl create secret generic redis --from-literal=service=aqi.redis-aqi.svc --from-literal=port=... --from-literal=password=...</code></pre>
+</section>
+</section>
+<section id="ingesting-data" class="level2">
+<h2>Ingesting Data</h2>
+<p>Data ingestion can be run by the job <a href="ingest.yaml">ingest.yaml</a>. There is a program called <a href="job.py">job.py</a> that will adjust the parameters for the particular date range you want to ingest along with other parameters.</p>
+<p>First, store the ingest script in a ConfigMap:</p>
+<pre><code>kubectl create configmap ingest --from-file=ingest.py=ingest.py</code></pre>
+<p>The data will be pulled from the object storage where your data collection is placing partitoins of data. For example, to ingest a single day:</p>
+<pre><code>python job.py --index 1 --type at 2020-09-14T00:00:00,2020-09-14T23:30:00 --name ingest-2020-09-14 | kubectl apply -f -</code></pre>
+<p>The configuration of the job is from:</p>
+<ul>
+<li>The object storage parameters are taken from <code>configmap/parameters</code> that was created when you setup data collection.</li>
+<li>The redis connection parameters are via <code>secret/redis</code></li>
+<li>The remaining parameters are set via the job.py configuration options</li>
+</ul>
+<p>The job.py program has the same parameters as ingest.py. See their usage to adjust the job creation.</p>
+</section>
+<section id="running-the-web-application" class="level2">
+<h2>Running the Web application</h2>
+<p>The deployment <a href="app.yaml">app.yaml</a> will deploy the Flask-based Web application and relies on the image <code>alexmilowski/flask-aqi:2020-09-14-002</code>.</p>
+<p>You can deploy the application via:</p>
+<pre><code>kubectl apply -f app.yaml</code></pre>
+<p>You can build your own version of this image via:</p>
+<pre><code>docker build . -t you/yourimage:version</code></pre>
+<p>and then just change the image reference in <a href="app.yaml">app.yaml</a>.</p>
+<p>Once deployed, you can either create an ingress or forward the port to your local machine:</p>
+<pre><code>kubectl port-forward `kubectl get pods --selector app=aqi -o jsonpath=&#39;{.items[0].metadata.name}&#39;` 5000</code></pre>
+<p>Once forwarded, you can visit http://localhost:5000/</p>
 </section>
 </body>
 </html>

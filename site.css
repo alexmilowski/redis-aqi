@@ -17,13 +17,70 @@ section.tiles > *:first-child {
 
 .logo {
    width: 163px !important;
+   margin-right: 2em;
 }
 
 #branding {
+   color: #6d7278;
+   font-family: 'Graphik Web', sans-serif;
+   text-transform: uppercase;
+   font-size: 0.75em;
 }
 
 #branding .item {
-   margin-left: 1em;
+   padding: 0.25em 0.25em;
+   padding-left: 0.5em;
+   padding-right: 0.5em;
    vertical-align: middle;
    display: inline-block;
+}
+
+.main #secondary {
+   display: none;
+}
+
+#secondary {
+   color: #6d7278;
+   font-family: 'Graphik Web', sans-serif;
+   text-transform: uppercase;
+   font-size: 0.75em;
+}
+
+#branding a:link, #secondary a:link, #TOC a:link {
+   color: #6d7278;
+   text-decoration: none;
+
+}
+
+#secondary .item {
+   display: inline-block;
+   margin-top: 1em;
+   padding: 0.25em 0.25em;
+   padding-left: 0.5em;
+   padding-right: 0.5em;
+}
+
+#branding .item:hover, #secondary .item:hover {
+   background-color: rgba(230,230,230,0.5);
+}
+
+#TOC {
+   /*
+   position: fixed;
+   top: 0;
+   right: 0;
+   */
+   float: right;
+   margin-left: 1em;
+   font-size: 0.8125em;
+   color: #6d7278;
+   font-family: 'Graphik Web', sans-serif;
+}
+
+#TOC ul {
+   padding-inline-start: 1.5em;
+}
+
+#TOC > ul {
+   margin-top: 0;
 }
