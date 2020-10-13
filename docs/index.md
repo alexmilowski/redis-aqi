@@ -45,32 +45,32 @@ pip install -r requirements.txt
 
 ## The Research
 
-A [complete write-up](/partitioning-geospatial-sensor-data.html) of the methodology behind the approach the is available.
+A [complete write-up](partitioning-geospatial-sensor-data.html) of the methodology behind the approach the is available.
 
 ## What you can do next {.tiles}
 
 ### Collecting Data {.tile}
 
 Understand how data is collected from the air quality sensors and stored for
-reuse. [More](/collect.html)
+reuse. [More](collect.html)
 
 ### Data Architecture {.tile}
 
-See how data is stored in Redis and understand how to setup Redis / Redis Enterprise databases. [More](/data.html)
+See how data is stored in Redis and understand how to setup Redis / Redis Enterprise databases. [More](data.html)
 
 ### Ingesting Data {.tile}
 
-All about how to ingest raw sensor data into Redis. [More](/ingest.html)
+All about how to ingest raw sensor data into Redis. [More](ingest.html)
 
 ### Querying Data {.tile}
 
 Understand how geospatial data is queried from the various
-data partitions. [More](/query.html)
+data partitions. [More](query.html)
 
 ### Demo Application {.tile}
 
-Understand how to run the demo web application. [More](/application.html)
+Understand how to run the demo web application. [More](application.html)
 
 ### Kubernetes {.tile}
 
-Deploy the whole system on Kubernetes. [More](/k8s.html)
+Deploy the whole system on Kubernetes. [More](k8s.html)
