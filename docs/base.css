@@ -86,3 +86,24 @@ li {
 li > ul {
    margin-top: 0.75em;
 }
+
+#TOC ul {
+   padding-inline-start: 1.5em;
+}
+
+#TOC > ul {
+   margin-top: 0;
+}
+
+
+@media screen and (max-width: 768px) {
+
+body {
+   margin-left: 10px;
+   margin-right: 10px;
+   padding-left: 0px;
+   padding-right: 0px;
+   min-width: auto;
+}
+
+}

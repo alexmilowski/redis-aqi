@@ -77,10 +77,10 @@ section.tiles > *:first-child {
    font-family: 'Graphik Web', sans-serif;
 }
 
-#TOC ul {
-   padding-inline-start: 1.5em;
+@media screen and (max-width: 768px) {
+
+#TOC {
+   float: none
 }
 
-#TOC > ul {
-   margin-top: 0;
 }
