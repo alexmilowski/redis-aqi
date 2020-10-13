@@ -42,7 +42,11 @@ $(TARGETDIR)/sequence-numbers.png \
 $(TARGETDIR)/quadrangle-coverings.png
 
 
-all: $(CSS) $(DOCS) $(RESOURCES)
+all: $(CSS) $(DOCS) $(RESOURCES) custom
+
+custom:
+	cp ../example-2020-08-28T13:30:00PT30M.png $(TARGETDIR)
+
 
 clean.html:
 	rm -f $(DOCS)
