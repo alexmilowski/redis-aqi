@@ -76,3 +76,7 @@ section > pre {
 pre > code {
    white-space: pre;
 }
+
+li {
+   margin-bottom: 0.75em;
+}
