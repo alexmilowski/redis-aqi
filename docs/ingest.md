@@ -32,8 +32,8 @@ program has the following general parameters:
 The --type parameter controls how the source specification is interpreted and
 from where the source data is read. The values allowed are:
 
- * *data* - (default) a set of local files
- * *urls* - a set of urls
+ * *data* - (default) a set of local files or urls that contains the data
+ * *urls* - list of files or urls whose content contains a list of urls of data resources
  * *now* - periods of time near now
  * *at* - periods of time from the range specified
 
