@@ -1,0 +1,8 @@
+redis
+hiredis
+haversine
+numpy
+pykrige
+scipy
+flask
+requests
