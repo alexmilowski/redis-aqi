@@ -380,6 +380,14 @@ def create_app(host='0.0.0.0',port=6379,password=None,prefix='AQI30-',partition=
       app.config['PARTITION'] = from_env('PARTITION',partition)
    return app
 
+class Config(object):
+   DEBUG=True
+   REDIS_HOST = from_env('REDIS_HOST','0.0.0.0')
+   REDIS_PORT = from_env('REDIS_PORT',6379,dtype=int)
+   REDIS_PASSWORD = from_env('REDIS_PASSWORD',None)
+   KEY_PREFIX = from_env('KEY_PREFIX','AQI30-')
+   PARTITION = from_env('PARTITION',30)
+
 def main():
    argparser = argparse.ArgumentParser(description='Web')
    argparser.add_argument('--host',help='Redis host',default='0.0.0.0')
