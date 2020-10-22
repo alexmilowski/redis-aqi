@@ -86,7 +86,7 @@ def ingest(client, data, precision=None, indices=None,box=None, partition=30,pre
       print()
 
 
-def ingest_urls(source,client,precision=None,indices=None,box=None, partition=30,prefix='AQI30-',verbose=False):
+def ingest_urls(source,client,precision=None,indices=None,box=None, partition=30,prefix='AQI30-',verbose=False,confirm=False):
    if type(source)==str:
       def from_string():
          for url in str.split('\n'):
@@ -102,7 +102,7 @@ def ingest_urls(source,client,precision=None,indices=None,box=None, partition=30
       urls = from_file()
 
    for url in urls:
-      if verbose:
+      if verbose or confirm:
          print(url)
       resp = requests.get(url)
       if resp.status_code==200:
@@ -155,6 +155,9 @@ if __name__ == '__main__':
 
    args = argparser.parse_args()
 
+   if args.password is None and 'REDIS_PASSWORD' in os.environ:
+      args.password = os.environ['REDIS_PASSWORD']
+
    client = redis.Redis(host=args.host,port=args.port,password=args.password)
 
    box = None
@@ -193,7 +196,8 @@ if __name__ == '__main__':
      'box' : box,
      'partition' : args.partition,
      'prefix' : args.key_prefix,
-     'verbose' : args.verbose
+     'verbose' : args.verbose,
+     'confirm' : args.confirm
    }
 
    if args.type=='now':
